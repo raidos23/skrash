@@ -23,10 +23,20 @@ cc -std=c11 -Wall -Wextra -I. \
   -lzip \
   -o /tmp/test_sb3_loading
 ```
+Compile the standalone SB3 loader test:
+```bash
+cc -std=c11 -Wall -Wextra -I. \
+  tests/test_opcodes_detection.c \
+  skrash/vm/_native/project/sb3.c \
+  skrash/vm/_native/project/asset.c \
+  -lzip \
+  -o /tmp/test_opcodes_detection
+```
 
 Run the executable against a test project:
 ```bash
 /tmp/test_sb3_loading
+/tmp/test_opcodes_detection
 ```
 ---
 
