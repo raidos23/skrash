@@ -1,0 +1,46 @@
+[project]
+name = "skrash"
+version = "0.1.0"
+description = "A Scratch 3.0 project runtime"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "LICENSE"
+authors = "Samuel Amen Ague"
+
+keywords = [
+    "scratch",
+    "scratch3",
+    "sb3",
+    "virtual-machine",
+    "runtime"
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-cov>=5",
+    "ruff>=0.6"
+]
+
+[project.scripts]
+skrash = "skrash.__main__:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+include = ["skrash*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP"]
