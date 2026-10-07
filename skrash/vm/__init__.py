@@ -1,2 +1,3 @@
-from ._native._core import load
-__all__ = ["load"]
+from ._native._core import Project, load
+
+__all__ = ["Project", "load"]
