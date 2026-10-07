@@ -28,10 +28,13 @@ void sb3_asset_free(SB3Asset *asset)
     free(asset->file_name);
     free(asset->data_format);
     free(asset->data);
+
     sb3_asset_init(asset);
 }
 
-const SB3Asset *sb3_asset_find(const SB3Project *project, const char *asset_id)
+const SB3Asset *sb3_asset_find(
+    const SB3Project *project,
+    const char *asset_id)
 {
     size_t index;
 
@@ -41,9 +44,12 @@ const SB3Asset *sb3_asset_find(const SB3Project *project, const char *asset_id)
     for (index = 0; index < project->asset_count; ++index) {
         const SB3Asset *asset = &project->assets[index];
 
-        if ((asset->asset_id != NULL && strcmp(asset->asset_id, asset_id) == 0) ||
-            (asset->md5ext != NULL && strcmp(asset->md5ext, asset_id) == 0) ||
-            (asset->file_name != NULL && strcmp(asset->file_name, asset_id) == 0)) {
+        if ((asset->asset_id != NULL &&
+             strcmp(asset->asset_id, asset_id) == 0) ||
+            (asset->md5ext != NULL &&
+             strcmp(asset->md5ext, asset_id) == 0) ||
+            (asset->file_name != NULL &&
+             strcmp(asset->file_name, asset_id) == 0)) {
             return asset;
         }
     }

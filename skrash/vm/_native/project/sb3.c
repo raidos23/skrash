@@ -98,6 +98,12 @@ static void sb3_target_init(SB3Target *target)
     target->is_stage = 0;
     target->blocks = NULL;
     target->block_count = 0;
+    target->x = 0.0;
+    target->y = 0.0;
+    target->direction = 90.0;
+    target->size = 100.0;
+    target->visible = 1;
+    
 }
 
 static void sb3_project_init(SB3Project *project)
@@ -853,6 +859,11 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
     sb3_target_init(target);
     target->name = json_get_string_dup(target_value, "name");
     target->is_stage = json_get_bool(target_value, "isStage", 0);
+    target->x = json_get_number(target_value, "x", 0.0);
+    target->y = json_get_number(target_value, "y", 0.0);
+    target->direction = json_get_number(target_value, "direction", 90.0);
+    target->size = json_get_number(target_value, "size", 100.0);
+    target->visible =   json_get_bool(target_value, "visible", 1);
 
     blocks = json_object_get(target_value, "blocks");
     if (blocks != NULL && blocks->type == JSON_OBJECT && blocks->as.object.count > 0) {
