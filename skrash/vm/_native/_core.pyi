@@ -1,0 +1,6 @@
+class Project:
+    ...
+
+def load(path: str) -> Project:
+    """load a sb3 project"""
+    ...
