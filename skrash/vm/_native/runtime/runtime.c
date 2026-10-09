@@ -139,6 +139,22 @@ static int execute_block(
 
     return 1;
 
+    case SB3_BLOCK_KIND_MOTION_TURN_LEFT:
+    if (!block->has_motion_turn_degrees)
+        return 0;
+
+    runtime->target->direction -=
+        block->motion_turn_degrees;
+
+    while (runtime->target->direction < 180.0)
+        runtime->target->direction += 360.0;
+
+    while (runtime->target->direction >= 180.0)
+        runtime->target->direction -= 360.0;
+
+    return 1;
+
+
     case SB3_BLOCK_KIND_UNKNOWN:
     default:
         return 0;

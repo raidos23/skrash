@@ -790,6 +790,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "motion_turnright") == 0)
         return SB3_BLOCK_KIND_MOTION_TURN_RIGHT;
 
+    if (strcmp(opcode, "motion_turnleft") == 0)
+        return SB3_BLOCK_KIND_MOTION_TURN_LEFT;
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -893,6 +896,11 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->motion_turn_degrees = 
     sb3_read_turn_degrees_value(block_value);
     block->has_motion_turn_degrees = 1;
+    break;
+    case SB3_BLOCK_KIND_MOTION_TURN_LEFT:
+    block->motion_turn_degrees = 
+    sb3_read_turn_degrees_value(block_value);
+    block->has_motion_turn_degrees = -1;
     break;
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
