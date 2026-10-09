@@ -122,6 +122,22 @@ static int execute_block(
 
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
         return 1;
+    /*Scratch normalise la direction du sprite dans l'intervalle ]-180°, 180°] 
+    Une rotation à droite augmente la direction avant normalisation */
+    case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
+    if (!block->has_motion_turn_degrees)
+        return 0;
+
+    runtime->target->direction +=
+        block->motion_turn_degrees;
+
+    while (runtime->target->direction > 180.0)
+        runtime->target->direction -= 360.0;
+
+    while (runtime->target->direction <= -180.0)
+        runtime->target->direction += 360.0;
+
+    return 1;
 
     case SB3_BLOCK_KIND_UNKNOWN:
     default:

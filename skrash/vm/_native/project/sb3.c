@@ -87,6 +87,8 @@ static void sb3_block_init(SB3Block *block)
     block->kind = SB3_BLOCK_KIND_UNKNOWN;
     block->motion_steps = 0.0;
     block->has_motion_steps = 0;
+    block->motion_turn_degrees = 0.0;
+    block->has_motion_turn_degrees = 0;
 }
 
 static void sb3_target_init(SB3Target *target)
@@ -785,6 +787,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "motion_movesteps") == 0)
         return SB3_BLOCK_KIND_MOTION_MOVE_STEPS;
 
+    if (strcmp(opcode, "motion_turnright") == 0)
+        return SB3_BLOCK_KIND_MOTION_TURN_RIGHT;
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -807,6 +812,44 @@ static double sb3_read_steps_value(const JsonValue *block_value)
         return 0.0;
 
     literal = literal->as.array.items[1];
+    if (literal == NULL)
+        return 0.0;
+
+    if (literal->type == JSON_NUMBER)
+        return literal->as.number;
+
+    if (literal->type == JSON_STRING)
+        return strtod(literal->as.string, NULL);
+
+    return 0.0;
+}
+static double sb3_read_turn_degrees_value(const JsonValue *block_value)
+{
+    const JsonValue *inputs;
+    const JsonValue *degrees;
+    const JsonValue *literal;
+
+    inputs = json_object_get(block_value, "inputs");
+
+    if (inputs == NULL || inputs->type != JSON_OBJECT)
+        return 0.0;
+
+    degrees = json_object_get(inputs, "DEGREES");
+
+    if (degrees == NULL ||
+        degrees->type != JSON_ARRAY ||
+        degrees->as.array.count < 2)
+        return 0.0;
+
+    literal = degrees->as.array.items[1];
+
+    if (literal == NULL ||
+        literal->type != JSON_ARRAY ||
+        literal->as.array.count < 2)
+        return 0.0;
+
+    literal = literal->as.array.items[1];
+
     if (literal == NULL)
         return 0.0;
 
@@ -841,11 +884,21 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
 
     opcode = block->opcode;
     block->kind = sb3_block_kind_from_opcode(opcode);
-    if (block->kind == SB3_BLOCK_KIND_MOTION_MOVE_STEPS) {
+    switch (block->kind) {
+        case SB3_BLOCK_KIND_MOTION_MOVE_STEPS:
         block->motion_steps = sb3_read_steps_value(block_value);
         block->has_motion_steps = 1;
-    }
-
+    break;
+    case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
+    block->motion_turn_degrees = 
+    sb3_read_turn_degrees_value(block_value);
+    block->has_motion_turn_degrees = 1;
+    break;
+    case SB3_BLOCK_KIND_UNKNOWN:
+    case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
+    default:
+        break;
+}
     return 1;
 }
 

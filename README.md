@@ -46,7 +46,7 @@ Run the executable against a test project:
 
 #### Motions
 - [x] move `n` steps (`motion_movesteps`)
-- [ ] turn `n` degrees (right) (`motion_turnright`)
+- [x] turn `n` degrees (right) (`motion_turnright`)
 - [ ] turn `n` degrees (left) (`motion_turnleft`)
 - [ ] go to `(random position, mouse position, a sprite position)` (`motion_goto`)
 - [ ] go to `(x, y)` (`motion_gotoxy`)

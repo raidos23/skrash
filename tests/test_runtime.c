@@ -52,10 +52,11 @@ int main(void)
             break;
 
         printf(
-            "executed: %s | x=%.2f y=%.2f\n",
+            "executed: %s | x=%.2f y=%.2f direction=%.2f\n",
             block->opcode,
             runtime.target->x,
-            runtime.target->y
+            runtime.target->y,
+            runtime.target->direction
         );
     }
 
