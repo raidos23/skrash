@@ -7,8 +7,7 @@ PY_LDFLAGS = $(shell $(PYTHON)-config --ldflags)
 
 CFLAGS = -std=c17 -Wall -Wextra -fPIC $(PY_CFLAGS)
 LDFLAGS = -shared $(PY_LDFLAGS)
-LIBS = -lzip
-
+LIBS = -lzip -lm
 SRC_DIR = skrash/vm/_native
 TEST_DIR = tests
 BUILD_DIR = build
