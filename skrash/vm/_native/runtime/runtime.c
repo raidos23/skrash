@@ -158,11 +158,11 @@ static int execute_block(
     runtime->target->direction -=
         block->motion_turn_degrees;
 
-    while (runtime->target->direction < 180.0)
-        runtime->target->direction += 360.0;
-
-    while (runtime->target->direction >= 180.0)
+    while (runtime->target->direction > 180.0)
         runtime->target->direction -= 360.0;
+
+    while (runtime->target->direction <= -180.0)
+        runtime->target->direction += 360.0;
 
     return 1;
 
