@@ -1,6 +1,7 @@
 #include "runtime.h"
 #include <math.h>
 #include <stddef.h>
+#include <stdio.h>
 #define PI 3.14159265358979323846
 static void sb3_runtime_reset(SB3Runtime *runtime)
 {
@@ -166,6 +167,10 @@ static int execute_block(
     return 1;
 
     case SB3_BLOCK_KIND_CONTROL_REPEAT:
+    return 1;
+
+    case SB3_BLOCK_KIND_LOOKS_SAY:
+        printf("%s\n", block->message ? block->message : "");
     return 1;
 
     case SB3_BLOCK_KIND_UNKNOWN:

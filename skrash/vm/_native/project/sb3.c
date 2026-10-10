@@ -90,8 +90,9 @@ static void sb3_block_init(SB3Block *block)
     block->motion_turn_degrees = 0.0;
     block->has_motion_turn_degrees = 0;
     block ->repeat_times = 0.0;
-    block ->has_repeat_times;
+    block ->has_repeat_times = 0;
     block ->substack = NULL;
+    block ->message = NULL;
 
 
 }
@@ -577,6 +578,7 @@ static void sb3_block_free(SB3Block *block)
     free(block->next);
     free(block->parent);
     free(block->substack);
+    free(block->message);
     sb3_block_init(block);
 }
 
@@ -801,6 +803,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
 
     if (strcmp(opcode, "control_repeat") == 0)
         return SB3_BLOCK_KIND_CONTROL_REPEAT;
+    
+    if (strcmp(opcode, "looks_say") == 0)
+        return SB3_BLOCK_KIND_LOOKS_SAY;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -948,6 +953,40 @@ static char *sb3_read_substack(const JsonValue *block_value)
     return NULL;
 }
 
+static char *sb3_read_message(const JsonValue *block_value)
+{
+    const JsonValue *inputs;
+    const JsonValue *message;
+    const JsonValue *literal;
+
+    inputs = json_object_get(block_value, "inputs");
+    message = json_object_get(inputs, "MESSAGE");
+
+    if (message == NULL ||
+        message->type != JSON_ARRAY ||
+        message->as.array.count < 2)
+        return NULL;
+
+    literal = message->as.array.items[1];
+
+    if (literal == NULL)
+        return NULL;
+
+    if (literal->type == JSON_STRING)
+        return sb3_strdup_local(literal->as.string);
+
+    if (literal->type != JSON_ARRAY ||
+        literal->as.array.count < 2)
+        return NULL;
+
+    literal = literal->as.array.items[1];
+
+    if (literal == NULL || literal->type != JSON_STRING)
+        return NULL;
+
+    return sb3_strdup_local(literal->as.string);
+}
+
 static int sb3_block_from_json(const char *block_id, const JsonValue *block_value, SB3Block *block)
 {
     const char *opcode;
@@ -971,9 +1010,9 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     opcode = block->opcode;
     block->kind = sb3_block_kind_from_opcode(opcode);
     switch (block->kind) {
-        case SB3_BLOCK_KIND_MOTION_MOVE_STEPS:
-        block->motion_steps = sb3_read_steps_value(block_value);
-        block->has_motion_steps = 1;
+    case SB3_BLOCK_KIND_MOTION_MOVE_STEPS:
+    block->motion_steps = sb3_read_steps_value(block_value);
+    block->has_motion_steps = 1;
     break;
     case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
     block->motion_turn_degrees = 
@@ -990,6 +1029,10 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->has_repeat_times = 1;
     block->substack = sb3_read_substack(block_value);
     break;
+    case SB3_BLOCK_KIND_LOOKS_SAY:
+    block->message = sb3_read_message(block_value);
+    break;
+    
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:

@@ -10,7 +10,8 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_MOTION_MOVE_STEPS,
     SB3_BLOCK_KIND_MOTION_TURN_RIGHT,
     SB3_BLOCK_KIND_MOTION_TURN_LEFT,
-    SB3_BLOCK_KIND_CONTROL_REPEAT
+    SB3_BLOCK_KIND_CONTROL_REPEAT,
+    SB3_BLOCK_KIND_LOOKS_SAY
 } SB3BlockKind;
 
 typedef struct SB3Block {
@@ -30,6 +31,7 @@ typedef struct SB3Block {
     double repeat_times;
     int has_repeat_times;
     char *substack;
+    char *message;
 } SB3Block;
 
 typedef struct SB3Target {
