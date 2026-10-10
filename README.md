@@ -114,7 +114,7 @@ Run the executable against a test project:
 
 #### Control
 - [ ] wait `n` seconds (`control_wait`)
-- [ ] repeat `n` (`control_repeat`)
+- [x] repeat `n` (`control_repeat`)
 - [ ] forever (`control_forever`)
 - [ ] if `condition` then (`control_if`)
 - [ ] if `condition` then ... else ... (`control_if_else`)
