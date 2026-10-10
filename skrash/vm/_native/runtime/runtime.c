@@ -173,6 +173,9 @@ static int execute_block(
         printf("%s\n", block->message ? block->message : "");
     return 1;
 
+    case SB3_BLOCK_KIND_CONTROL_FOREVER:
+    return 1;
+
     case SB3_BLOCK_KIND_UNKNOWN:
     default:
         return 0;
@@ -185,8 +188,12 @@ static void sb3_runtime_finish_body( SB3Runtime *runtime, const SB3Block *next)
         SB3RepeatFrame *frame =
             &runtime->repeat_stack[runtime->repeat_depth - 1];
 
+        if (frame->forever) {
+            runtime->current_block = frame->body;
+            return;
+        }
         frame->remaining--;
-
+        
         if (frame->remaining > 0) {
             runtime->current_block = frame->body;
             return;
@@ -217,15 +224,18 @@ static int sb3_runtime_enter_repeat( SB3Runtime *runtime, const SB3Block *block)
     const SB3Block *body;
     int iterations;
 
-    if (block == NULL || !block->has_repeat_times)
+    if (block == NULL)
         return 0;
+
+    if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT && !block->has_repeat_times)
+    return 0; 
 
     if (runtime->repeat_depth >= SB3_RUNTIME_MAX_REPEAT_DEPTH)
         return 0;
 
-    iterations = (int)block->repeat_times;
+    iterations = block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER ? 0 : (int)block->repeat_times;
 
-    if (iterations <= 0 || block->substack == NULL) {
+    if ((block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT && iterations <= 0) || block->substack == NULL) {
         const SB3Block *next = NULL;
 
         if (block->next != NULL) {
@@ -252,7 +262,9 @@ static int sb3_runtime_enter_repeat( SB3Runtime *runtime, const SB3Block *block)
 
     frame->repeat_block = block;
     frame->body = body;
-    frame->remaining = iterations;
+    frame->forever = block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER;
+    frame->remaining = frame->forever ? 0 : iterations;
+
 
     runtime->repeat_depth++;
     runtime->current_block = body;
@@ -279,6 +291,13 @@ int sb3_runtime_step(SB3Runtime *runtime)
         }
         return 1;
     }
+    if (block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER) {
+    if (!sb3_runtime_enter_repeat(runtime, block)) {
+        runtime->running = 0;
+        return 0;
+    }
+    return 1;
+}
 
     if (!execute_block(runtime, block)) {
         runtime->running = 0;

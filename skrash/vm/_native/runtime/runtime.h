@@ -8,6 +8,7 @@ typedef struct SB3RepeatFrame {
     const SB3Block *repeat_block;
     const SB3Block *body;
     int remaining;
+    int forever;
 } SB3RepeatFrame;
 
 typedef struct SB3Runtime {

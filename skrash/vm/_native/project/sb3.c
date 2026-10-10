@@ -807,6 +807,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "looks_say") == 0)
         return SB3_BLOCK_KIND_LOOKS_SAY;
 
+    if (strcmp(opcode, "control_forever") == 0)
+       return SB3_BLOCK_KIND_CONTROL_FOREVER;
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1031,6 +1034,9 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     break;
     case SB3_BLOCK_KIND_LOOKS_SAY:
     block->message = sb3_read_message(block_value);
+    break;
+    case SB3_BLOCK_KIND_CONTROL_FOREVER:
+    block->substack = sb3_read_substack(block_value);
     break;
     
     case SB3_BLOCK_KIND_UNKNOWN:
