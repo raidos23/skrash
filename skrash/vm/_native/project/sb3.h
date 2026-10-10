@@ -9,7 +9,8 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED,
     SB3_BLOCK_KIND_MOTION_MOVE_STEPS,
     SB3_BLOCK_KIND_MOTION_TURN_RIGHT,
-    SB3_BLOCK_KIND_MOTION_TURN_LEFT
+    SB3_BLOCK_KIND_MOTION_TURN_LEFT,
+    SB3_BLOCK_KIND_CONTROL_REPEAT
 } SB3BlockKind;
 
 typedef struct SB3Block {
@@ -26,6 +27,9 @@ typedef struct SB3Block {
     int has_motion_steps;
     double motion_turn_degrees;
     int has_motion_turn_degrees;
+    double repeat_times;
+    int has_repeat_times;
+    char *substack;
 } SB3Block;
 
 typedef struct SB3Target {

@@ -1,7 +1,7 @@
 #include "runtime.h"
-
+#include <math.h>
 #include <stddef.h>
-
+#define PI 3.14159265358979323846
 static void sb3_runtime_reset(SB3Runtime *runtime)
 {
     if (runtime == NULL)
@@ -11,6 +11,7 @@ static void sb3_runtime_reset(SB3Runtime *runtime)
     runtime->target = NULL;
     runtime->current_block = NULL;
     runtime->running = 0;
+    runtime ->repeat_depth = 0;
 }
 
 int sb3_runtime_init(
@@ -105,19 +106,29 @@ static int execute_block(
         return 0;
 
     switch (block->kind) {
-
+    
     case SB3_BLOCK_KIND_MOTION_MOVE_STEPS:
-        if (!block->has_motion_steps)
-            return 0;
-
-        /*
+    if (!block->has_motion_steps)
+        return 0;
+    /*
+    La direction du sprite est exprimée en degrés dans Scratch,
+    tandis que sin() et cos() attendent un angle en radians
+    on convertit donc la direction avant de calculer le déplacement
+    */
+    double radians =
+        runtime->target->direction
+        * PI / 180.0;
+    /*
          * V1 :
          * on simplifie le déplacement
          * en modifiant directement X.
          */
-        runtime->target->x +=
-            block->motion_steps;
+    runtime->target->x +=
+        block->motion_steps * sin(radians);
 
+    runtime->target->y +=
+        block->motion_steps * cos(radians);
+        
         return 1;
 
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
@@ -154,6 +165,8 @@ static int execute_block(
 
     return 1;
 
+    case SB3_BLOCK_KIND_CONTROL_REPEAT:
+    return 1;
 
     case SB3_BLOCK_KIND_UNKNOWN:
     default:
@@ -161,33 +174,124 @@ static int execute_block(
     }
 }
 
-int sb3_runtime_step(SB3Runtime *runtime)
+static void sb3_runtime_finish_body( SB3Runtime *runtime, const SB3Block *next)
 {
-    const SB3Block *next;
+    while (next == NULL && runtime->repeat_depth > 0) {
+        SB3RepeatFrame *frame =
+            &runtime->repeat_stack[runtime->repeat_depth - 1];
 
-    if (runtime == NULL ||
-        !runtime->running ||
-        runtime->current_block == NULL)
-        return 0;
+        frame->remaining--;
 
-    if (!execute_block(
-            runtime,
-            runtime->current_block))
-        return 0;
+        if (frame->remaining > 0) {
+            runtime->current_block = frame->body;
+            return;
+        }
 
-    next = NULL;
+        const SB3Block *repeat_block = frame->repeat_block;
 
-    if (runtime->current_block->next != NULL) {
-        next = sb3_target_find_block(
-            runtime->target,
-            runtime->current_block->next
-        );
+        runtime->repeat_depth--;
+
+        next = NULL;
+
+        if (repeat_block->next != NULL) {
+            next = sb3_target_find_block(
+                runtime->target,
+                repeat_block->next
+            );
+        }
     }
 
     runtime->current_block = next;
 
     if (next == NULL)
         runtime->running = 0;
+}
+
+static int sb3_runtime_enter_repeat( SB3Runtime *runtime, const SB3Block *block)
+{
+    const SB3Block *body;
+    int iterations;
+
+    if (block == NULL || !block->has_repeat_times)
+        return 0;
+
+    if (runtime->repeat_depth >= SB3_RUNTIME_MAX_REPEAT_DEPTH)
+        return 0;
+
+    iterations = (int)block->repeat_times;
+
+    if (iterations <= 0 || block->substack == NULL) {
+        const SB3Block *next = NULL;
+
+        if (block->next != NULL) {
+            next = sb3_target_find_block(
+                runtime->target,
+                block->next
+            );
+        }
+
+        sb3_runtime_finish_body(runtime, next);
+        return 1;
+    }
+
+    body = sb3_target_find_block(
+        runtime->target,
+        block->substack
+    );
+
+    if (body == NULL)
+        return 0;
+
+    SB3RepeatFrame *frame =
+        &runtime->repeat_stack[runtime->repeat_depth];
+
+    frame->repeat_block = block;
+    frame->body = body;
+    frame->remaining = iterations;
+
+    runtime->repeat_depth++;
+    runtime->current_block = body;
+
+    return 1;
+}
+
+int sb3_runtime_step(SB3Runtime *runtime)
+{
+    const SB3Block *block;
+    const SB3Block *next = NULL;
+
+    if (runtime == NULL ||
+        !runtime->running ||
+        runtime->current_block == NULL)
+        return 0;
+
+    block = runtime->current_block;
+
+    if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT) {
+        if (!sb3_runtime_enter_repeat(runtime, block)) {
+            runtime->running = 0;
+            return 0;
+        }
+        return 1;
+    }
+
+    if (!execute_block(runtime, block)) {
+        runtime->running = 0;
+        return 0; 
+    }
+
+    if (block->next != NULL) {
+        next = sb3_target_find_block(
+            runtime->target,
+            block->next
+        );
+    }
+
+    if (next != NULL) {
+        runtime->current_block = next;
+    } else {
+        sb3_runtime_finish_body(runtime, NULL);
+    }
 
     return 1;
 }

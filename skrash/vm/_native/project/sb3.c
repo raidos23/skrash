@@ -89,6 +89,11 @@ static void sb3_block_init(SB3Block *block)
     block->has_motion_steps = 0;
     block->motion_turn_degrees = 0.0;
     block->has_motion_turn_degrees = 0;
+    block ->repeat_times = 0.0;
+    block ->has_repeat_times;
+    block ->substack = NULL;
+
+
 }
 
 static void sb3_target_init(SB3Target *target)
@@ -571,6 +576,7 @@ static void sb3_block_free(SB3Block *block)
     free(block->opcode);
     free(block->next);
     free(block->parent);
+    free(block->substack);
     sb3_block_init(block);
 }
 
@@ -793,6 +799,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "motion_turnleft") == 0)
         return SB3_BLOCK_KIND_MOTION_TURN_LEFT;
 
+    if (strcmp(opcode, "control_repeat") == 0)
+        return SB3_BLOCK_KIND_CONTROL_REPEAT;
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -826,6 +835,8 @@ static double sb3_read_steps_value(const JsonValue *block_value)
 
     return 0.0;
 }
+
+
 static double sb3_read_turn_degrees_value(const JsonValue *block_value)
 {
     const JsonValue *inputs;
@@ -865,6 +876,78 @@ static double sb3_read_turn_degrees_value(const JsonValue *block_value)
     return 0.0;
 }
 
+static double sb3_read_repeat_times(const JsonValue *block_value)
+{
+    const JsonValue *inputs;
+    const JsonValue *times;
+    const JsonValue *value;
+
+    inputs = json_object_get(block_value, "inputs");
+    times = json_object_get(inputs, "TIMES");
+
+    if (times == NULL ||
+        times->type != JSON_ARRAY ||
+        times->as.array.count < 2)
+        return 0.0;
+
+    value = times->as.array.items[1];
+
+    if (value == NULL)
+        return 0.0;
+
+    if (value->type == JSON_NUMBER)
+        return value->as.number;
+
+    if (value->type == JSON_STRING)
+        return strtod(value->as.string, NULL);
+
+    if (value->type == JSON_ARRAY &&
+        value->as.array.count >= 2) {
+        value = value->as.array.items[1];
+
+        if (value != NULL && value->type == JSON_NUMBER)
+            return value->as.number;
+
+        if (value != NULL && value->type == JSON_STRING)
+            return strtod(value->as.string, NULL);
+    }
+
+    return 0.0;
+}
+
+static char *sb3_read_substack(const JsonValue *block_value)
+{
+    const JsonValue *inputs;
+    const JsonValue *substack;
+    const JsonValue *value;
+
+    inputs = json_object_get(block_value, "inputs");
+    substack = json_object_get(inputs, "SUBSTACK");
+
+    if (substack == NULL ||
+        substack->type != JSON_ARRAY ||
+        substack->as.array.count < 2)
+        return NULL;
+
+    value = substack->as.array.items[1];
+
+    if (value == NULL || value->type == JSON_NULL)
+        return NULL;
+
+    if (value->type == JSON_STRING)
+        return sb3_strdup_local(value->as.string);
+
+    if (value->type == JSON_ARRAY &&
+        value->as.array.count >= 2) {
+        value = value->as.array.items[1];
+
+        if (value != NULL && value->type == JSON_STRING)
+            return sb3_strdup_local(value->as.string);
+    }
+
+    return NULL;
+}
+
 static int sb3_block_from_json(const char *block_id, const JsonValue *block_value, SB3Block *block)
 {
     const char *opcode;
@@ -901,6 +984,11 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->motion_turn_degrees = 
     sb3_read_turn_degrees_value(block_value);
     block->has_motion_turn_degrees = -1;
+    break;
+    case SB3_BLOCK_KIND_CONTROL_REPEAT:
+    block->repeat_times = sb3_read_repeat_times(block_value);
+    block->has_repeat_times = 1;
+    block->substack = sb3_read_substack(block_value);
     break;
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
