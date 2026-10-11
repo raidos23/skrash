@@ -176,6 +176,13 @@ static int execute_block(
     case SB3_BLOCK_KIND_CONTROL_FOREVER:
     return 1;
 
+    case SB3_BLOCK_KIND_MOTION_GOTOXY:
+    if (!block->has_motion_gotoxy)
+        return 0;
+    runtime->target->x = block->motion_x;
+    runtime->target->y = block->motion_y;
+    return 1;
+
     case SB3_BLOCK_KIND_UNKNOWN:
     default:
         return 0;

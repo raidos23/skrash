@@ -93,6 +93,9 @@ static void sb3_block_init(SB3Block *block)
     block ->has_repeat_times = 0;
     block ->substack = NULL;
     block ->message = NULL;
+    block->motion_x = 0.0;
+    block->motion_y = 0.0;
+    block->has_motion_gotoxy = 0;
 
 
 }
@@ -810,6 +813,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "control_forever") == 0)
        return SB3_BLOCK_KIND_CONTROL_FOREVER;
 
+    if (strcmp(opcode, "motion_gotoxy") == 0)
+       return SB3_BLOCK_KIND_MOTION_GOTOXY;
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -844,6 +850,60 @@ static double sb3_read_steps_value(const JsonValue *block_value)
     return 0.0;
 }
 
+static double sb3_read_coordinate_value(
+    const JsonValue *block_value,
+    const char *input_name
+)
+{
+    const JsonValue *inputs;
+    const JsonValue *input;
+    const JsonValue *literal;
+
+    inputs = json_object_get(block_value, "inputs");
+
+    if (inputs == NULL || inputs->type != JSON_OBJECT)
+        return 0.0;
+
+    input = json_object_get(inputs, input_name);
+
+    if (input == NULL ||
+        input->type != JSON_ARRAY ||
+        input->as.array.count < 2)
+        return 0.0;
+
+    literal = input->as.array.items[1];
+
+    if (literal == NULL)
+        return 0.0;
+
+    if (literal->type == JSON_ARRAY) {
+        if (literal->as.array.count < 2)
+            return 0.0;
+
+        literal = literal->as.array.items[1];
+    }
+
+    if (literal == NULL)
+        return 0.0;
+
+    if (literal->type == JSON_NUMBER)
+        return literal->as.number;
+
+    if (literal->type == JSON_STRING) {
+        char *end;
+        double value;
+
+        errno = 0;
+        value = strtod(literal->as.string, &end);
+
+        if (end == literal->as.string || *end != '\0' || errno == ERANGE)
+            return 0.0;
+            
+        return value;
+    }
+
+    return 0.0;
+}
 
 static double sb3_read_turn_degrees_value(const JsonValue *block_value)
 {
@@ -1037,6 +1097,11 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     break;
     case SB3_BLOCK_KIND_CONTROL_FOREVER:
     block->substack = sb3_read_substack(block_value);
+    break;
+    case SB3_BLOCK_KIND_MOTION_GOTOXY:
+    block->motion_x = sb3_read_coordinate_value(block_value, "X");
+    block->motion_y = sb3_read_coordinate_value(block_value, "Y");
+    block->has_motion_gotoxy = 1;
     break;
     
     case SB3_BLOCK_KIND_UNKNOWN:
