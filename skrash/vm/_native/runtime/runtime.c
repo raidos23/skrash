@@ -182,7 +182,13 @@ static int execute_block(
     runtime->target->x = block->motion_x;
     runtime->target->y = block->motion_y;
     return 1;
-
+    
+    case SB3_BLOCK_KIND_MOTION_SETX:
+    if(!block->has_motion_setx)
+    return 0;
+    runtime->target->x = block->motion_x;
+    return 1;
+    
     case SB3_BLOCK_KIND_UNKNOWN:
     default:
         return 0;
