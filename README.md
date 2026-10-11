@@ -55,9 +55,9 @@ Run the executable against a test project:
 - [ ] point in direction `direction` (`motion_pointindirection`)
 - [ ] point towards `(random position, a sprite position)` (`motion_pointtowards`)
 - [ ] change `x` by `n` (`motion_changexby`)
-- [ ] set `x` to `n` (`motion_setx`)
+- [x] set `x` to `n` (`motion_setx`)
 - [ ] change `y` by `n` (`motion_changeyby`)
-- [ ] set `y` to `n` (`motion_sety`)
+- [x] set `y` to `n` (`motion_sety`)
 - [ ] if on edge bounce (`motion_ifonedgebounce`)
 - [ ] set rotation style `(left-right, all around, don't rotate)` (`motion_setrotationstyle`)
 ##### Motions variables

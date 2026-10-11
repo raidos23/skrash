@@ -14,7 +14,8 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_LOOKS_SAY,
     SB3_BLOCK_KIND_CONTROL_FOREVER,
     SB3_BLOCK_KIND_MOTION_GOTOXY,
-    SB3_BLOCK_KIND_MOTION_SETX
+    SB3_BLOCK_KIND_MOTION_SETX,
+    SB3_BLOCK_KIND_MOTION_SETY
 } SB3BlockKind;
 
 typedef struct SB3Block {
@@ -39,6 +40,7 @@ typedef struct SB3Block {
     double motion_y;
     int has_motion_gotoxy;
     int has_motion_setx;
+    int has_motion_sety;
 } SB3Block;
 
 typedef struct SB3Target {
