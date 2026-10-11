@@ -14,29 +14,16 @@
 
 ### 1. Compile and run C tests
 
-Compile the standalone SB3 loader test:
 ```bash
-cc -std=c11 -Wall -Wextra -I. \
-  tests/test_sb3_loading.c \
-  skrash/vm/_native/project/sb3.c \
-  skrash/vm/_native/project/asset.c \
-  -lzip \
-  -o /tmp/test_sb3_loading
-```
-Compile the standalone SB3 loader test:
-```bash
-cc -std=c11 -Wall -Wextra -I. \
-  tests/test_opcodes_detection.c \
-  skrash/vm/_native/project/sb3.c \
-  skrash/vm/_native/project/asset.c \
-  -lzip \
-  -o /tmp/test_opcodes_detection
-```
+## for c tests
+make ctest
 
-Run the executable against a test project:
-```bash
-/tmp/test_sb3_loading
-/tmp/test_opcodes_detection
+## for python tests
+make pytest
+
+## clean
+make clean
+
 ```
 ---
 
