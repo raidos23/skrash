@@ -33,7 +33,7 @@ int main(void)
         const SB3Block *block = runtime.current_block;
 
         if (!sb3_runtime_step(&runtime)) {
-            fprintf(stderr, "Erreur pendant l'exécution.\n");
+            fprintf(stderr, "Error during execution.\n");
             break;
         }
 

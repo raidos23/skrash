@@ -1,7 +1,7 @@
 import skrash
 
 
-PROJECT_PATH = "tests/checks/one.sb3"
+PROJECT_PATH = "tests/checks/motion.sb3"
 
 def test_python_runtime_execution():
     """Test the Python API and native Scratch runtime execution."""
