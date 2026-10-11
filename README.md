@@ -49,7 +49,7 @@ Run the executable against a test project:
 - [x] turn `n` degrees (right) (`motion_turnright`)
 - [x] turn `n` degrees (left) (`motion_turnleft`)
 - [ ] go to `(random position, mouse position, a sprite position)` (`motion_goto`)
-- [ ] go to `(x, y)` (`motion_gotoxy`)
+- [x] go to `(x, y)` (`motion_gotoxy`)
 - [ ] glide `n` secs to `(random position, mouse position, a sprite position)` (`motion_glideto`)
 - [ ] glide `n` secs to `(x, y)` (`motion_glidesecstoxy`)
 - [ ] point in direction `direction` (`motion_pointindirection`)
@@ -67,7 +67,7 @@ Run the executable against a test project:
 
 #### Looks
 - [ ] say `message` for `n` seconds (`looks_sayforsecs`)
-- [ ] say `message` (`looks_say`)
+- [x] say `message` (`looks_say`)
 - [ ] think `message` for `n` seconds (`looks_thinkforsecs`)
 - [ ] think `message` (`looks_think`)
 - [ ] switch costume to `costume` (`looks_switchcostumeto`)
@@ -115,7 +115,7 @@ Run the executable against a test project:
 #### Control
 - [ ] wait `n` seconds (`control_wait`)
 - [x] repeat `n` (`control_repeat`)
-- [ ] forever (`control_forever`)
+- [x] forever (`control_forever`)
 - [ ] if `condition` then (`control_if`)
 - [ ] if `condition` then ... else ... (`control_if_else`)
 - [ ] wait until `condition` (`control_wait_until`)
