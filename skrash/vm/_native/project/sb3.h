@@ -19,7 +19,12 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_CONTROL_WAIT,
     SB3_BLOCK_KIND_MOTION_POINTINDIRECTION,
     SB3_BLOCK_KIND_MOTION_CHANGEXBY,  
-    SB3_BLOCK_KIND_MOTION_CHANGEYBY
+    SB3_BLOCK_KIND_MOTION_CHANGEYBY,
+    SB3_BLOCK_KIND_LOOKS_SHOW,  
+    SB3_BLOCK_KIND_LOOKS_HIDE,  
+    SB3_BLOCK_KIND_LOOKS_SETSIZETO,  
+    SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY,  
+    SB3_BLOCK_KIND_LOOKS_THINK
 } SB3BlockKind;
 
 typedef struct SB3Block {
@@ -49,6 +54,8 @@ typedef struct SB3Block {
     int has_motion_pointindirection;
     double wait_seconds;
     int has_wait_seconds;
+    double size_value;
+    int has_size_value;
 } SB3Block;
 
 typedef struct SB3Target {

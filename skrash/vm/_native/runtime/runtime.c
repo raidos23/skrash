@@ -182,7 +182,7 @@ static int execute_block(
         return 1;
 
     case SB3_BLOCK_KIND_LOOKS_SAY:
-        printf("%s\n", block->message ? block->message : "");
+        printf("(say) %s\n", block->message ? block->message : "");
         return 1;
 
     case SB3_BLOCK_KIND_CONTROL_FOREVER:
@@ -247,6 +247,31 @@ static int execute_block(
     if (!block->has_motion_sety)  
         return 0;  
     runtime->target->y += block->motion_y;  
+    return 1;  
+
+    case SB3_BLOCK_KIND_LOOKS_SHOW:  
+    runtime->target->visible = 1;  
+    return 1;  
+  
+    case SB3_BLOCK_KIND_LOOKS_HIDE:  
+    runtime->target->visible = 0;  
+    return 1;  
+  
+    case SB3_BLOCK_KIND_LOOKS_SETSIZETO:  
+    if (!block->has_size_value)  
+        return 0;  
+    runtime->target->size = block->size_value;  
+    return 1;  
+  
+    case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:  
+    if (!block->has_size_value)  
+        return 0;  
+    runtime->target->size += block->size_value;  
+    return 1;  
+  
+    case SB3_BLOCK_KIND_LOOKS_THINK:  
+    // même comportement que looks_say  
+    printf("(think) %s\n", block->message ? block->message : "");  
     return 1;  
 
     case SB3_BLOCK_KIND_UNKNOWN:

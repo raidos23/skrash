@@ -834,6 +834,21 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "motion_changeyby") == 0)  
         return SB3_BLOCK_KIND_MOTION_CHANGEYBY;  
 
+    if (strcmp(opcode, "looks_show") == 0)  
+    return SB3_BLOCK_KIND_LOOKS_SHOW;  
+    
+    if (strcmp(opcode, "looks_hide") == 0)  
+    return SB3_BLOCK_KIND_LOOKS_HIDE;  
+    
+    if (strcmp(opcode, "looks_setsizeto") == 0)  
+    return SB3_BLOCK_KIND_LOOKS_SETSIZETO;  
+
+    if (strcmp(opcode, "looks_changesizeby") == 0)  
+    return SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY;  
+    
+    if (strcmp(opcode, "looks_think") == 0)  
+    return SB3_BLOCK_KIND_LOOKS_THINK;  
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1145,7 +1160,24 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->motion_y = sb3_read_coordinate_value(block_value, "DY");  
     block->has_motion_sety = 1;  
     break;  
-    
+    case SB3_BLOCK_KIND_LOOKS_SETSIZETO:  
+    block->size_value = sb3_read_coordinate_value(block_value, "SIZE");  
+    block->has_size_value = 1;  
+    break;  
+    case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:  
+    block->size_value = sb3_read_coordinate_value(block_value, "CHANGE");  
+    block->has_size_value = 1;  
+    break;  
+    case SB3_BLOCK_KIND_LOOKS_THINK:  
+    block->message = sb3_read_message(block_value);   // même fonction que pour looks_say  
+    break;  
+    case SB3_BLOCK_KIND_LOOKS_SHOW:
+    // rien à lire
+    break;  
+    case SB3_BLOCK_KIND_LOOKS_HIDE:  
+    // rien à lire  
+    break;
+
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:
