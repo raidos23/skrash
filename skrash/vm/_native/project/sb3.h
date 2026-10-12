@@ -15,7 +15,8 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_CONTROL_FOREVER,
     SB3_BLOCK_KIND_MOTION_GOTOXY,
     SB3_BLOCK_KIND_MOTION_SETX,
-    SB3_BLOCK_KIND_MOTION_SETY
+    SB3_BLOCK_KIND_MOTION_SETY,
+    SB3_BLOCK_KIND_CONTROL_WAIT,
 } SB3BlockKind;
 
 typedef struct SB3Block {
@@ -41,6 +42,8 @@ typedef struct SB3Block {
     int has_motion_gotoxy;
     int has_motion_setx;
     int has_motion_sety;
+    double wait_seconds;
+    int has_wait_seconds;
 } SB3Block;
 
 typedef struct SB3Target {

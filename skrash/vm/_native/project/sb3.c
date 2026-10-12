@@ -822,6 +822,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "motion_sety") == 0)
        return SB3_BLOCK_KIND_MOTION_SETY;
 
+    if (strcmp(opcode, "control_wait") == 0)
+        return SB3_BLOCK_KIND_CONTROL_WAIT;
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1116,6 +1119,10 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     case SB3_BLOCK_KIND_MOTION_SETY:
     block->motion_y = sb3_read_coordinate_value(block_value, "Y");
     block->has_motion_sety = 1;
+    break;
+    case SB3_BLOCK_KIND_CONTROL_WAIT:
+    block->wait_seconds = sb3_read_coordinate_value(block_value, "DURATION");
+    block->has_wait_seconds = 1;
     break;
     
     case SB3_BLOCK_KIND_UNKNOWN:

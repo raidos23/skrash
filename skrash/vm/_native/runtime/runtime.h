@@ -18,8 +18,9 @@ typedef struct SB3Runtime {
 
     SB3RepeatFrame repeat_stack[SB3_RUNTIME_MAX_REPEAT_DEPTH];
     size_t repeat_depth;
-
     int running;
+    int is_waiting;
+    double wait_until; // timestamp absolu en secondes
 } SB3Runtime;
 
 int sb3_runtime_init(

@@ -5,7 +5,7 @@ PY_CFLAGS = $(shell $(PYTHON)-config --includes)
 PY_EXT = $(shell $(PYTHON)-config --extension-suffix)
 PY_LDFLAGS = $(shell $(PYTHON)-config --ldflags)
 
-CFLAGS = -std=c17 -Wall -Wextra -fPIC $(PY_CFLAGS)
+CFLAGS = -std=c17 -Wall -Wextra -fPIC $(PY_CFLAGS) -D_POSIX_C_SOURCE=199309L
 LDFLAGS = -shared $(PY_LDFLAGS)
 LIBS = -lzip -lm
 SRC_DIR = skrash/vm/_native
