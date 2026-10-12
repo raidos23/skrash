@@ -39,11 +39,11 @@ make clean
 - [x] go to `(x, y)` (`motion_gotoxy`)
 - [ ] glide `n` secs to `(random position, mouse position, a sprite position)` (`motion_glideto`)
 - [ ] glide `n` secs to `(x, y)` (`motion_glidesecstoxy`)
-- [ ] point in direction `direction` (`motion_pointindirection`)
+- [x] point in direction `direction` (`motion_pointindirection`)
 - [ ] point towards `(random position, a sprite position)` (`motion_pointtowards`)
-- [ ] change `x` by `n` (`motion_changexby`)
+- [x] change `x` by `n` (`motion_changexby`)
 - [x] set `x` to `n` (`motion_setx`)
-- [ ] change `y` by `n` (`motion_changeyby`)
+- [x] change `y` by `n` (`motion_changeyby`)
 - [x] set `y` to `n` (`motion_sety`)
 - [ ] if on edge bounce (`motion_ifonedgebounce`)
 - [ ] set rotation style `(left-right, all around, don't rotate)` (`motion_setrotationstyle`)
@@ -100,7 +100,7 @@ make clean
 - [ ] broadcast `message` and wait (`event_broadcastandwait`)
 
 #### Control
-- [ ] wait `n` seconds (`control_wait`)
+- [x] wait `n` seconds (`control_wait`)
 - [x] repeat `n` (`control_repeat`)
 - [x] forever (`control_forever`)
 - [ ] if `condition` then (`control_if`)
