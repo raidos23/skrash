@@ -236,6 +236,18 @@ static int execute_block(
         runtime->target->direction += 360.0;  
   
     return 1; 
+    // reutiisation de has_motion_setx et has_motion_sety au lieu d'ajouter de nouveaux flags dédiés 
+    case SB3_BLOCK_KIND_MOTION_CHANGEXBY:  
+    if (!block->has_motion_setx)  
+        return 0;  
+    runtime->target->x += block->motion_x;  
+    return 1;  
+  
+    case SB3_BLOCK_KIND_MOTION_CHANGEYBY:  
+    if (!block->has_motion_sety)  
+        return 0;  
+    runtime->target->y += block->motion_y;  
+    return 1;  
 
     case SB3_BLOCK_KIND_UNKNOWN:
     default:

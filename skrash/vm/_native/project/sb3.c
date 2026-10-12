@@ -827,6 +827,12 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
 
     if (strcmp(opcode, "motion_pointindirection") == 0)  
         return SB3_BLOCK_KIND_MOTION_POINTINDIRECTION;  
+    
+    if (strcmp(opcode, "motion_changexby") == 0)  
+        return SB3_BLOCK_KIND_MOTION_CHANGEXBY; 
+
+    if (strcmp(opcode, "motion_changeyby") == 0)  
+        return SB3_BLOCK_KIND_MOTION_CHANGEYBY;  
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1130,6 +1136,14 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION:  
     block->motion_direction = sb3_read_coordinate_value(block_value, "DIRECTION");  
     block->has_motion_pointindirection = 1;  
+    break;  
+    case SB3_BLOCK_KIND_MOTION_CHANGEXBY:  
+    block->motion_x = sb3_read_coordinate_value(block_value, "DX");  
+    block->has_motion_setx = 1;   // ou un nouveau flag  
+    break;  
+    case SB3_BLOCK_KIND_MOTION_CHANGEYBY:  
+    block->motion_y = sb3_read_coordinate_value(block_value, "DY");  
+    block->has_motion_sety = 1;  
     break;  
     
     case SB3_BLOCK_KIND_UNKNOWN:
