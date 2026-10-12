@@ -17,6 +17,7 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_MOTION_SETX,
     SB3_BLOCK_KIND_MOTION_SETY,
     SB3_BLOCK_KIND_CONTROL_WAIT,
+    SB3_BLOCK_KIND_MOTION_POINTINDIRECTION
 } SB3BlockKind;
 
 typedef struct SB3Block {
@@ -39,9 +40,11 @@ typedef struct SB3Block {
     char *message;
     double motion_x;
     double motion_y;
+    double motion_direction;
     int has_motion_gotoxy;
     int has_motion_setx;
     int has_motion_sety;
+    int has_motion_pointindirection;
     double wait_seconds;
     int has_wait_seconds;
 } SB3Block;

@@ -825,6 +825,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "control_wait") == 0)
         return SB3_BLOCK_KIND_CONTROL_WAIT;
 
+    if (strcmp(opcode, "motion_pointindirection") == 0)  
+        return SB3_BLOCK_KIND_MOTION_POINTINDIRECTION;  
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1124,6 +1127,10 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->wait_seconds = sb3_read_coordinate_value(block_value, "DURATION");
     block->has_wait_seconds = 1;
     break;
+    case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION:  
+    block->motion_direction = sb3_read_coordinate_value(block_value, "DIRECTION");  
+    block->has_motion_pointindirection = 1;  
+    break;  
     
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
