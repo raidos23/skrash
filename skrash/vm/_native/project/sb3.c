@@ -71,6 +71,27 @@ static void *sb3_calloc(size_t count, size_t size)
     return calloc(count, size);
 }
 
+static void sb3_input_init(SB3Input *in)
+{
+    if (in == NULL)
+        return;
+
+    in->kind = SB3_INPUT_KIND_NONE;
+    in->literal_number = 0.0;
+    in->literal_string = NULL;
+    in->block_id = NULL;
+}
+
+static void sb3_input_free(SB3Input *in)
+{
+    if (in == NULL)
+        return;
+
+    free(in->literal_string);
+    free(in->block_id);
+    sb3_input_init(in);
+}
+
 static void sb3_block_init(SB3Block *block)
 {
     if (block == NULL)
@@ -96,6 +117,18 @@ static void sb3_block_init(SB3Block *block)
     block->motion_x = 0.0;
     block->motion_y = 0.0;
     block->has_motion_gotoxy = 0;
+    sb3_input_init(&block->input_steps);
+    sb3_input_init(&block->input_degrees);
+    sb3_input_init(&block->input_times);
+    sb3_input_init(&block->input_duration);
+    sb3_input_init(&block->input_x);
+    sb3_input_init(&block->input_y);
+    sb3_input_init(&block->input_direction);
+    sb3_input_init(&block->input_size);
+    sb3_input_init(&block->input_change);
+    sb3_input_init(&block->input_message);
+    sb3_input_init(&block->input_num1);
+    sb3_input_init(&block->input_num2);
 
 
 }
@@ -582,6 +615,18 @@ static void sb3_block_free(SB3Block *block)
     free(block->parent);
     free(block->substack);
     free(block->message);
+    sb3_input_free(&block->input_steps);
+    sb3_input_free(&block->input_degrees);
+    sb3_input_free(&block->input_times);
+    sb3_input_free(&block->input_duration);
+    sb3_input_free(&block->input_x);
+    sb3_input_free(&block->input_y);
+    sb3_input_free(&block->input_direction);
+    sb3_input_free(&block->input_size);
+    sb3_input_free(&block->input_change);
+    sb3_input_free(&block->input_message);
+    sb3_input_free(&block->input_num1);
+    sb3_input_free(&block->input_num2);
     sb3_block_init(block);
 }
 

@@ -27,6 +27,20 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_LOOKS_THINK
 } SB3BlockKind;
 
+typedef enum SB3InputKind {
+    SB3_INPUT_KIND_NONE = 0,
+    SB3_INPUT_KIND_LITERAL,    /* [1, [4, "5"]]            */
+    SB3_INPUT_KIND_BLOCK,      /* [3, "blockid", [4,"3"]]  */
+    SB3_INPUT_KIND_BLOCK_ONLY  /* [2, "blockid"]           */
+} SB3InputKind;
+
+typedef struct SB3Input {
+    SB3InputKind kind;
+    double literal_number;
+    char  *literal_string;
+    char  *block_id;
+} SB3Input;
+
 typedef struct SB3Block {
     char *block_id;
     char *opcode;
@@ -56,6 +70,20 @@ typedef struct SB3Block {
     int has_wait_seconds;
     double size_value;
     int has_size_value;
+    /* entrees generiques (reporters) — posees a l'etape 1,
+ * utilisees a partir de l'etape 3 */
+    SB3Input input_steps;
+    SB3Input input_degrees;
+    SB3Input input_times;
+    SB3Input input_duration;
+    SB3Input input_x;
+    SB3Input input_y;
+    SB3Input input_direction;
+    SB3Input input_size;
+    SB3Input input_change;
+    SB3Input input_message;
+    SB3Input input_num1;
+    SB3Input input_num2;
 } SB3Block;
 
 typedef struct SB3Target {
