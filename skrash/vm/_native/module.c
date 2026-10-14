@@ -138,7 +138,7 @@ SkrashProject_step(
         return NULL;
     }
 
-    if (!self->runtime.running)
+    if (!self->runtime.threads[0].running)
         Py_RETURN_FALSE;
 
     if (!sb3_runtime_step(&self->runtime)) {

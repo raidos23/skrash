@@ -1,9 +1,7 @@
 #include "runtime.h"
-#include <math.h>
-#include <stddef.h>
-#include <stdio.h>
-#define PI 3.14159265358979323846
-#include <time.h>
+
+#include <stdlib.h>
+#include <string.h>
 
 static void sb3_runtime_reset(SB3Runtime *runtime)
 {
@@ -11,23 +9,16 @@ static void sb3_runtime_reset(SB3Runtime *runtime)
         return;
 
     runtime->project = NULL;
-    runtime->target = NULL;
-    runtime->current_block = NULL;
-    runtime->running = 0;
-    runtime->repeat_depth = 0;
-    runtime->is_waiting = 0;
-    runtime->wait_until = (time_t)0;
+    runtime->threads = NULL;
+    runtime->thread_count = 0;
 }
 
-int sb3_runtime_init(
-    SB3Runtime *runtime,
-    SB3Project *project)
+int sb3_runtime_init(SB3Runtime *runtime, SB3Project *project)
 {
     if (runtime == NULL || project == NULL)
         return 0;
 
     sb3_runtime_reset(runtime);
-
     runtime->project = project;
 
     return 1;
@@ -38,404 +29,90 @@ void sb3_runtime_free(SB3Runtime *runtime)
     if (runtime == NULL)
         return;
 
-    /*
-     * Le runtime ne possède pas le projet.
-     */
+    free(runtime->threads);
     sb3_runtime_reset(runtime);
-}
-
-static SB3Target *find_target(SB3Runtime *runtime)
-{
-    size_t i;
-
-    if (runtime == NULL || runtime->project == NULL)
-        return NULL;
-
-    for (i = 0; i < runtime->project->target_count; ++i) {
-        SB3Target *target =
-            &runtime->project->targets[i];
-
-        if (!target->is_stage)
-            return target;
-    }
-
-    return NULL;
 }
 
 int sb3_runtime_start(SB3Runtime *runtime)
 {
-    SB3Target *target;
-    const SB3Block *event;
-
     if (runtime == NULL || runtime->project == NULL)
         return 0;
 
-    target = find_target(runtime);
+    free(runtime->threads);
+    runtime->threads = NULL;
+    runtime->thread_count = 0;
 
-    if (target == NULL)
-        return 0;
+    size_t count = 0;
 
-    event = sb3_target_find_block_by_kind(
-        target,
-        SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED
-    );
+    for (size_t i = 0;
+         i < runtime->project->target_count;
+         ++i) {
+        SB3Target *target = &runtime->project->targets[i];
 
-    if (event == NULL)
-        return 0;
-
-    runtime->target = target;
-
-    if (event->next != NULL) {
-        runtime->current_block =
-            sb3_target_find_block(
+        if (sb3_target_find_block_by_kind(
                 target,
-                event->next
-            );
-    } else {
-        runtime->current_block = NULL;
+                SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED) != NULL)
+            ++count;
     }
 
-    runtime->is_waiting = 0;
-    runtime->wait_until = (time_t)0;
-    runtime->repeat_depth = 0;
-
-    runtime->running =
-        runtime->current_block != NULL;
-
-    return 1;
-}
-
-static int execute_block(
-    SB3Runtime *runtime,
-    const SB3Block *block)
-{
-    if (runtime == NULL ||
-        runtime->target == NULL ||
-        block == NULL)
+    if (count == 0)
         return 0;
 
-    switch (block->kind) {
+    runtime->threads = calloc(
+        count, sizeof(*runtime->threads));
 
-    case SB3_BLOCK_KIND_MOTION_MOVE_STEPS:
-        if (!block->has_motion_steps)
-            return 0;
-
-        /*
-        La direction du sprite est exprimée en degrés dans Scratch,
-        tandis que sin() et cos() attendent un angle en radians
-        on convertit donc la direction avant de calculer le déplacement
-        */
-        {
-            double radians =
-                runtime->target->direction
-                * PI / 180.0;
-
-            /*
-                 * V1 :
-                 * on simplifie le déplacement
-                 * en modifiant directement X.
-                 */
-            runtime->target->x +=
-                block->motion_steps * sin(radians);
-
-            runtime->target->y +=
-                block->motion_steps * cos(radians);
-        }
-
-        return 1;
-
-    case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
-        return 1;
-    /*Scratch normalise la direction du sprite dans l'intervalle ]-180°, 180°] 
-    Une rotation à droite augmente la direction avant normalisation */
-    case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
-        if (!block->has_motion_turn_degrees)
-            return 0;
-
-        runtime->target->direction +=
-            block->motion_turn_degrees;
-
-        while (runtime->target->direction > 180.0)
-            runtime->target->direction -= 360.0;
-
-        while (runtime->target->direction <= -180.0)
-            runtime->target->direction += 360.0;
-
-        return 1;
-
-    case SB3_BLOCK_KIND_MOTION_TURN_LEFT:
-        if (!block->has_motion_turn_degrees)
-            return 0;
-
-        runtime->target->direction -=
-            block->motion_turn_degrees;
-
-        while (runtime->target->direction > 180.0)
-            runtime->target->direction -= 360.0;
-
-        while (runtime->target->direction <= -180.0)
-            runtime->target->direction += 360.0;
-
-        return 1;
-
-    case SB3_BLOCK_KIND_CONTROL_REPEAT:
-        return 1;
-
-    case SB3_BLOCK_KIND_LOOKS_SAY:
-        printf("(say) %s\n", block->message ? block->message : "");
-        return 1;
-
-    case SB3_BLOCK_KIND_CONTROL_FOREVER:
-        return 1;
-
-    case SB3_BLOCK_KIND_MOTION_GOTOXY:
-        if (!block->has_motion_gotoxy)
-            return 0;
-
-        runtime->target->x = block->motion_x;
-        runtime->target->y = block->motion_y;
-        return 1;
-
-    case SB3_BLOCK_KIND_MOTION_SETX:
-        if (!block->has_motion_setx)
-            return 0;
-
-        runtime->target->x = block->motion_x;
-        return 1;
-
-    case SB3_BLOCK_KIND_MOTION_SETY:
-        if (!block->has_motion_sety)
-            return 0;
-
-        runtime->target->y = block->motion_y;
-        return 1;
-
-    case SB3_BLOCK_KIND_CONTROL_WAIT:
-        if (!block->has_wait_seconds)
-            return 0;
-
-        if (block->wait_seconds <= 0.0)
-            return 1;
-
-        runtime->is_waiting = 1;
-        runtime->wait_until =
-            time(NULL) + (time_t)block->wait_seconds;
-
-        return 1;
-
-    case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION:  
-    if (!block->has_motion_pointindirection)  
-        return 0;  
-  
-    runtime->target->direction = block->motion_direction;  
-  
-    // Normalisation Scratch : ]-180°, 180°]   
-    while (runtime->target->direction > 180.0)  
-        runtime->target->direction -= 360.0;  
-    while (runtime->target->direction <= -180.0)  
-        runtime->target->direction += 360.0;  
-  
-    return 1; 
-    // reutiisation de has_motion_setx et has_motion_sety au lieu d'ajouter de nouveaux flags dédiés 
-    case SB3_BLOCK_KIND_MOTION_CHANGEXBY:  
-    if (!block->has_motion_setx)  
-        return 0;  
-    runtime->target->x += block->motion_x;  
-    return 1;  
-  
-    case SB3_BLOCK_KIND_MOTION_CHANGEYBY:  
-    if (!block->has_motion_sety)  
-        return 0;  
-    runtime->target->y += block->motion_y;  
-    return 1;  
-
-    case SB3_BLOCK_KIND_LOOKS_SHOW:  
-    runtime->target->visible = 1;  
-    return 1;  
-  
-    case SB3_BLOCK_KIND_LOOKS_HIDE:  
-    runtime->target->visible = 0;  
-    return 1;  
-  
-    case SB3_BLOCK_KIND_LOOKS_SETSIZETO:  
-    if (!block->has_size_value)  
-        return 0;  
-    runtime->target->size = block->size_value;  
-    return 1;  
-  
-    case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:  
-    if (!block->has_size_value)  
-        return 0;  
-    runtime->target->size += block->size_value;  
-    return 1;  
-  
-    case SB3_BLOCK_KIND_LOOKS_THINK:  
-    // même comportement que looks_say  
-    printf("(think) %s\n", block->message ? block->message : "");  
-    return 1;  
-
-    case SB3_BLOCK_KIND_UNKNOWN:
-    default:
+    if (runtime->threads == NULL)
         return 0;
-    }
-}
 
-static void sb3_runtime_finish_body( SB3Runtime *runtime, const SB3Block *next)
-{
-    while (next == NULL && runtime->repeat_depth > 0) {
-        SB3RepeatFrame *frame =
-            &runtime->repeat_stack[runtime->repeat_depth - 1];
+    for (size_t i = 0;
+         i < runtime->project->target_count;
+         ++i) {
+        SB3Target *target = &runtime->project->targets[i];
 
-        if (frame->forever) {
-            runtime->current_block = frame->body;
-            return;
-        }
-        frame->remaining--;
+        const SB3Block *hat = sb3_target_find_block_by_kind(
+            target,
+            SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED);
 
-        if (frame->remaining > 0) {
-            runtime->current_block = frame->body;
-            return;
-        }
+        if (hat == NULL || hat->next == NULL)
+            continue;
 
-        const SB3Block *repeat_block = frame->repeat_block;
+        const SB3Block *first =
+            sb3_target_find_block(target, hat->next);
 
-        runtime->repeat_depth--;
+        if (first == NULL)
+            continue;
 
-        next = NULL;
+        SB3Thread *thread =
+            &runtime->threads[runtime->thread_count++];
 
-        if (repeat_block->next != NULL) {
-            next = sb3_target_find_block(
-                runtime->target,
-                repeat_block->next
-            );
-        }
+        memset(thread, 0, sizeof(*thread));
+
+        thread->target = target;
+        thread->current_block = first;
+        thread->running = 1;
     }
 
-    runtime->current_block = next;
-
-    if (next == NULL)
-        runtime->running = 0;
-}
-
-static int sb3_runtime_enter_repeat( SB3Runtime *runtime, const SB3Block *block)
-{
-    const SB3Block *body;
-    int iterations;
-
-    if (block == NULL)
-        return 0;
-
-    if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT && !block->has_repeat_times)
-        return 0; 
-
-    if (runtime->repeat_depth >= SB3_RUNTIME_MAX_REPEAT_DEPTH)
-        return 0;
-
-    iterations = block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER ? 0 : (int)block->repeat_times;
-
-    if ((block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT && iterations <= 0) || block->substack == NULL) {
-        const SB3Block *next = NULL;
-
-        if (block->next != NULL) {
-            next = sb3_target_find_block(
-                runtime->target,
-                block->next
-            );
-        }
-
-        sb3_runtime_finish_body(runtime, next);
-        return 1;
-    }
-
-    body = sb3_target_find_block(
-        runtime->target,
-        block->substack
-    );
-
-    if (body == NULL)
-        return 0;
-
-    SB3RepeatFrame *frame =
-        &runtime->repeat_stack[runtime->repeat_depth];
-
-    frame->repeat_block = block;
-    frame->body = body;
-    frame->forever = block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER;
-    frame->remaining = frame->forever ? 0 : iterations;
-
-    runtime->repeat_depth++;
-    runtime->current_block = body;
-
-    return 1;
+    return runtime->thread_count > 0;
 }
 
 int sb3_runtime_step(SB3Runtime *runtime)
 {
-    const SB3Block *block;
-    const SB3Block *next = NULL;
-
-    if (runtime == NULL ||
-        !runtime->running ||
-        runtime->current_block == NULL)
+    if (runtime == NULL || runtime->threads == NULL)
         return 0;
 
-    if (runtime->is_waiting) {
-        if (time(NULL) < runtime->wait_until)
-            return 1;
+    int any_running = 0;
 
-        runtime->is_waiting = 0;
-        runtime->wait_until = (time_t)0;
+    for (size_t i = 0; i < runtime->thread_count; ++i) {
+        SB3Thread *thread = &runtime->threads[i];
 
-        block = runtime->current_block;
+        if (!thread->running)
+            continue;
 
-        if (block != NULL && block->next != NULL) {
-            next = sb3_target_find_block(
-                runtime->target,
-                block->next
-            );
-        }
+        sb3_thread_step(thread);
 
-        sb3_runtime_finish_body(runtime, next);
-        return 1;
+        if (thread->running)
+            any_running = 1;
     }
 
-    block = runtime->current_block;
-
-    if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT) {
-        if (!sb3_runtime_enter_repeat(runtime, block)) {
-            runtime->running = 0;
-            return 0;
-        }
-        return 1;
-    }
-    if (block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER) {
-    if (!sb3_runtime_enter_repeat(runtime, block)) {
-        runtime->running = 0;
-        return 0;
-    }
-    return 1;
-}
-
-    if (!execute_block(runtime, block)) {
-        runtime->running = 0;
-        return 0; 
-    }
-
-    if (runtime->is_waiting)
-        return 1;
-
-    if (block->next != NULL) {
-        next = sb3_target_find_block(
-            runtime->target,
-            block->next
-        );
-    }
-
-    if (next != NULL) {
-        runtime->current_block = next;
-    } else {
-        sb3_runtime_finish_body(runtime, NULL);
-    }
-
-    return 1;
+    return any_running;
 }
