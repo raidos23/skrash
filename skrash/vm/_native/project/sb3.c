@@ -894,7 +894,103 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "looks_think") == 0)  
     return SB3_BLOCK_KIND_LOOKS_THINK;  
 
+    if (strcmp(opcode, "operator_add")      == 0) return SB3_BLOCK_KIND_OPERATOR_ADD;
+    if (strcmp(opcode, "operator_subtract") == 0) return SB3_BLOCK_KIND_OPERATOR_SUBTRACT;
+    if (strcmp(opcode, "operator_multiply") == 0) return SB3_BLOCK_KIND_OPERATOR_MULTIPLY;
+    if (strcmp(opcode, "operator_divide")   == 0) return SB3_BLOCK_KIND_OPERATOR_DIVIDE;
+    if (strcmp(opcode, "operator_mod")      == 0) return SB3_BLOCK_KIND_OPERATOR_MOD;
+    if (strcmp(opcode, "operator_round")    == 0) return SB3_BLOCK_KIND_OPERATOR_ROUND;
+    if (strcmp(opcode, "operator_random")   == 0) return SB3_BLOCK_KIND_OPERATOR_RANDOM;
+    if (strcmp(opcode, "operator_lt")       == 0) return SB3_BLOCK_KIND_OPERATOR_LT;
+    if (strcmp(opcode, "operator_gt")       == 0) return SB3_BLOCK_KIND_OPERATOR_GT;
+    if (strcmp(opcode, "operator_equals")   == 0) return SB3_BLOCK_KIND_OPERATOR_EQUALS;
+    if (strcmp(opcode, "operator_and")      == 0) return SB3_BLOCK_KIND_OPERATOR_AND;
+    if (strcmp(opcode, "operator_or")       == 0) return SB3_BLOCK_KIND_OPERATOR_OR;
+    if (strcmp(opcode, "operator_not")      == 0) return SB3_BLOCK_KIND_OPERATOR_NOT;
+
     return SB3_BLOCK_KIND_UNKNOWN;
+}
+
+static double sb3_shadow_number(const JsonValue *shadow)
+{
+    if (shadow == NULL ||
+        shadow->type != JSON_ARRAY ||
+        shadow->as.array.count < 2)
+        return 0.0;
+
+    const JsonValue *v = shadow->as.array.items[1];
+    if (v == NULL) return 0.0;
+    if (v->type == JSON_NUMBER) return v->as.number;
+    if (v->type == JSON_STRING) return strtod(v->as.string, NULL);
+    return 0.0;
+}
+
+static int sb3_parse_input(const JsonValue *input, SB3Input *out)
+{
+    if (input == NULL ||
+        input->type != JSON_ARRAY ||
+        input->as.array.count < 2 ||
+        out == NULL)
+        return 0;
+
+    const JsonValue *tag  = input->as.array.items[0];
+    const JsonValue *body = input->as.array.items[1];
+
+    if (tag == NULL || tag->type != JSON_NUMBER) return 0;
+
+    int kind = (int)tag->as.number;
+
+    if (kind == 1) {
+        out->kind = SB3_INPUT_KIND_LITERAL;
+        out->literal_number = sb3_shadow_number(body);
+
+        if (body != NULL && body->type == JSON_ARRAY &&
+            body->as.array.count >= 2) {
+            const JsonValue *inner = body->as.array.items[1];
+            if (inner != NULL && inner->type == JSON_STRING)
+                out->literal_string = sb3_strdup_local(inner->as.string);
+        }
+        return 1;
+    }
+
+    if (kind == 2) {
+        if (body == NULL || body->type != JSON_STRING) return 0;
+        out->kind = SB3_INPUT_KIND_BLOCK_ONLY;
+        out->block_id = sb3_strdup_local(body->as.string);
+        return out->block_id != NULL;
+    }
+
+    if (kind == 3) {
+        if (body == NULL || body->type != JSON_STRING) return 0;
+        out->kind = SB3_INPUT_KIND_BLOCK;
+        out->block_id = sb3_strdup_local(body->as.string);
+        if (out->block_id == NULL) return 0;
+
+        if (input->as.array.count >= 3) {
+            const JsonValue *shadow = input->as.array.items[2];
+            out->literal_number = sb3_shadow_number(shadow);
+
+            if (shadow != NULL && shadow->type == JSON_ARRAY &&
+                shadow->as.array.count >= 2) {
+                const JsonValue *inner = shadow->as.array.items[1];
+                if (inner != NULL && inner->type == JSON_STRING)
+                    out->literal_string = sb3_strdup_local(inner->as.string);
+            }
+        }
+        return 1;
+    }
+
+    return 0;
+}
+
+static int sb3_parse_input_at(
+    const JsonValue *block_value,
+    const char *input_name,
+    SB3Input *out)
+{
+    const JsonValue *inputs = json_object_get(block_value, "inputs");
+    const JsonValue *in = inputs ? json_object_get(inputs, input_name) : NULL;
+    return sb3_parse_input(in, out);
 }
 
 static double sb3_read_steps_value(const JsonValue *block_value)
@@ -1221,6 +1317,33 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     break;  
     case SB3_BLOCK_KIND_LOOKS_HIDE:  
     // rien à lire  
+    break;
+
+    case SB3_BLOCK_KIND_OPERATOR_ADD:
+    case SB3_BLOCK_KIND_OPERATOR_SUBTRACT:
+    case SB3_BLOCK_KIND_OPERATOR_MULTIPLY:
+    case SB3_BLOCK_KIND_OPERATOR_DIVIDE:
+    case SB3_BLOCK_KIND_OPERATOR_MOD:
+    case SB3_BLOCK_KIND_OPERATOR_RANDOM:
+    sb3_parse_input_at(block_value, "NUM1", &block->input_num1);
+    sb3_parse_input_at(block_value, "NUM2", &block->input_num2);
+    break;
+
+    case SB3_BLOCK_KIND_OPERATOR_LT:
+    case SB3_BLOCK_KIND_OPERATOR_GT:
+    case SB3_BLOCK_KIND_OPERATOR_EQUALS:
+    case SB3_BLOCK_KIND_OPERATOR_AND:
+    case SB3_BLOCK_KIND_OPERATOR_OR:
+    sb3_parse_input_at(block_value, "OPERAND1", &block->input_num1);
+    sb3_parse_input_at(block_value, "OPERAND2", &block->input_num2);
+    break;
+
+    case SB3_BLOCK_KIND_OPERATOR_ROUND:
+    sb3_parse_input_at(block_value, "NUM", &block->input_num1);
+    break;
+
+    case SB3_BLOCK_KIND_OPERATOR_NOT:
+    sb3_parse_input_at(block_value, "OPERAND", &block->input_num1);
     break;
 
     case SB3_BLOCK_KIND_UNKNOWN:
