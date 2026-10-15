@@ -1248,6 +1248,7 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->kind = sb3_block_kind_from_opcode(opcode);
     switch (block->kind) {
     case SB3_BLOCK_KIND_MOTION_MOVE_STEPS:
+    sb3_parse_input_at(block_value, "STEPS", &block->input_steps);
     block->motion_steps = sb3_read_steps_value(block_value);
     block->has_motion_steps = 1;
     break;

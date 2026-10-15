@@ -22,16 +22,14 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
 
     switch (block->kind) {
     case SB3_BLOCK_KIND_MOTION_MOVE_STEPS: {
-        if (!block->has_motion_steps)
-            return 0;
-
+        double steps;
+        if (!sb3_input_evaluate(thread, &block->input_steps, &steps))
+        return 0;
         double radians = target->direction * PI / 180.0;
-
-        target->x += block->motion_steps * sin(radians);
-        target->y += block->motion_steps * cos(radians);
-
+        target->x += steps * sin(radians);
+        target->y += steps * cos(radians);
         return 1;
-    }
+}
 
     case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
         if (!block->has_motion_turn_degrees)

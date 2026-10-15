@@ -1,8 +1,5 @@
 #include "blocks.h"
 #include "../../project/sb3.h"
-
-#include "blocks.h"
-
 #include <stdio.h>
 #include <string.h>
 
