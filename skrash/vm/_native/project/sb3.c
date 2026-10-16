@@ -1253,13 +1253,13 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->has_motion_steps = 1;
     break;
     case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
-    block->motion_turn_degrees = 
-    sb3_read_turn_degrees_value(block_value);
+    sb3_parse_input_at(block_value, "DEGREES", &block->input_degrees);
+    block->motion_turn_degrees = sb3_read_turn_degrees_value(block_value);
     block->has_motion_turn_degrees = 1;
     break;
     case SB3_BLOCK_KIND_MOTION_TURN_LEFT:
-    block->motion_turn_degrees = 
-    sb3_read_turn_degrees_value(block_value);
+    sb3_parse_input_at(block_value, "DEGREES", &block->input_degrees);
+    block->motion_turn_degrees = sb3_read_turn_degrees_value(block_value);
     block->has_motion_turn_degrees = -1;
     break;
     case SB3_BLOCK_KIND_CONTROL_REPEAT:
@@ -1274,15 +1274,19 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->substack = sb3_read_substack(block_value);
     break;
     case SB3_BLOCK_KIND_MOTION_GOTOXY:
+    sb3_parse_input_at(block_value, "X", &block->input_x);
+    sb3_parse_input_at(block_value, "Y", &block->input_y);
     block->motion_x = sb3_read_coordinate_value(block_value, "X");
     block->motion_y = sb3_read_coordinate_value(block_value, "Y");
     block->has_motion_gotoxy = 1;
     break;
     case SB3_BLOCK_KIND_MOTION_SETX:
+    sb3_parse_input_at(block_value, "X", &block->input_x);
     block->motion_x = sb3_read_coordinate_value(block_value, "X");
     block->has_motion_setx = 1;
     break;
     case SB3_BLOCK_KIND_MOTION_SETY:
+    sb3_parse_input_at(block_value, "Y", &block->input_y);
     block->motion_y = sb3_read_coordinate_value(block_value, "Y");
     block->has_motion_sety = 1;
     break;
@@ -1291,24 +1295,27 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->has_wait_seconds = 1;
     break;
     case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION:  
+    sb3_parse_input_at(block_value, "DIRECTION", &block->input_direction);
     block->motion_direction = sb3_read_coordinate_value(block_value, "DIRECTION");  
     block->has_motion_pointindirection = 1;  
     break;  
-    case SB3_BLOCK_KIND_MOTION_CHANGEXBY:  
+    case SB3_BLOCK_KIND_MOTION_CHANGEXBY:
+    sb3_parse_input_at(block_value, "DX", &block->input_x);  
     block->motion_x = sb3_read_coordinate_value(block_value, "DX");  
-    block->has_motion_setx = 1;   // ou un nouveau flag  
+    block->has_motion_setx = 1;  
     break;  
-    case SB3_BLOCK_KIND_MOTION_CHANGEYBY:  
-    block->motion_y = sb3_read_coordinate_value(block_value, "DY");  
-    block->has_motion_sety = 1;  
+    case SB3_BLOCK_KIND_MOTION_CHANGEYBY:
+    sb3_parse_input_at(block_value, "DY", &block->input_y);
+    block->motion_y = sb3_read_coordinate_value(block_value, "DY");
+    block->has_motion_sety = 1;
     break;  
-    case SB3_BLOCK_KIND_LOOKS_SETSIZETO:  
-    block->size_value = sb3_read_coordinate_value(block_value, "SIZE");  
-    block->has_size_value = 1;  
+    case SB3_BLOCK_KIND_LOOKS_SETSIZETO:
+    block->size_value = sb3_read_coordinate_value(block_value, "SIZE");
+    block->has_size_value = 1;
     break;  
-    case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:  
-    block->size_value = sb3_read_coordinate_value(block_value, "CHANGE");  
-    block->has_size_value = 1;  
+    case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:
+    block->size_value = sb3_read_coordinate_value(block_value, "CHANGE");
+    block->has_size_value = 1;
     break;  
     case SB3_BLOCK_KIND_LOOKS_THINK:  
     block->message = sb3_read_message(block_value);   // même fonction que pour looks_say  

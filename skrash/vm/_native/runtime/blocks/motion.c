@@ -24,72 +24,82 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
     case SB3_BLOCK_KIND_MOTION_MOVE_STEPS: {
         double steps;
         if (!sb3_input_evaluate(thread, &block->input_steps, &steps))
-        return 0;
+            return 0;
         double radians = target->direction * PI / 180.0;
         target->x += steps * sin(radians);
         target->y += steps * cos(radians);
         return 1;
-}
+    }
 
-    case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
-        if (!block->has_motion_turn_degrees)
+    case SB3_BLOCK_KIND_MOTION_TURN_RIGHT: {
+        double degrees;
+        if (!sb3_input_evaluate(thread, &block->input_degrees, &degrees))
             return 0;
-
-        target->direction += block->motion_turn_degrees;
+        target->direction += degrees;
         normalize_direction(target);
         return 1;
+    }
 
-    case SB3_BLOCK_KIND_MOTION_TURN_LEFT:
-        if (!block->has_motion_turn_degrees)
+    case SB3_BLOCK_KIND_MOTION_TURN_LEFT: {
+        double degrees;
+        if (!sb3_input_evaluate(thread, &block->input_degrees, &degrees))
             return 0;
-
-        target->direction -= block->motion_turn_degrees;
+        target->direction -= degrees;
         normalize_direction(target);
         return 1;
+    }
 
-    case SB3_BLOCK_KIND_MOTION_GOTOXY:
-        if (!block->has_motion_gotoxy)
+    case SB3_BLOCK_KIND_MOTION_GOTOXY: {
+        double x, y;
+        if (!sb3_input_evaluate(thread, &block->input_x, &x))
             return 0;
-
-        target->x = block->motion_x;
-        target->y = block->motion_y;
+        if (!sb3_input_evaluate(thread, &block->input_y, &y))
+            return 0;
+        target->x = x;
+        target->y = y;
         return 1;
+    }
 
-    case SB3_BLOCK_KIND_MOTION_SETX:
-        if (!block->has_motion_setx)
+    case SB3_BLOCK_KIND_MOTION_SETX: {
+        double x;
+        if (!sb3_input_evaluate(thread, &block->input_x, &x))
             return 0;
-
-        target->x = block->motion_x;
+        target->x = x;
         return 1;
+    }
 
-    case SB3_BLOCK_KIND_MOTION_SETY:
-        if (!block->has_motion_sety)
+    case SB3_BLOCK_KIND_MOTION_SETY: {
+        double y;
+        if (!sb3_input_evaluate(thread, &block->input_y, &y))
             return 0;
-
-        target->y = block->motion_y;
+        target->y = y;
         return 1;
+    }
 
-    case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION:
-        if (!block->has_motion_pointindirection)
+    case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION: {
+        double direction;
+        if (!sb3_input_evaluate(thread, &block->input_direction, &direction))
             return 0;
-
-        target->direction = block->motion_direction;
+        target->direction = direction;
         normalize_direction(target);
         return 1;
+    }
 
-    case SB3_BLOCK_KIND_MOTION_CHANGEXBY:
-        if (!block->has_motion_setx)
+    case SB3_BLOCK_KIND_MOTION_CHANGEXBY: {
+        double dx;
+        if (!sb3_input_evaluate(thread, &block->input_x, &dx))
             return 0;
-
-        target->x += block->motion_x;
+        target->x += dx;
         return 1;
+    }
 
-    case SB3_BLOCK_KIND_MOTION_CHANGEYBY:
-        if (!block->has_motion_sety)
+    case SB3_BLOCK_KIND_MOTION_CHANGEYBY: {
+        double dy;
+        if (!sb3_input_evaluate(thread, &block->input_y, &dy))
             return 0;
-
-        target->y += block->motion_y;
+        target->y += dy;
         return 1;
+    }
 
     default:
         return 0;
