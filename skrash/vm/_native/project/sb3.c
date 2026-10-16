@@ -1194,34 +1194,41 @@ static char *sb3_read_message(const JsonValue *block_value)
 {
     const JsonValue *inputs;
     const JsonValue *message;
-    const JsonValue *literal;
+    const JsonValue *tag;
+    const JsonValue *body;
 
     inputs = json_object_get(block_value, "inputs");
+    if (inputs == NULL || inputs->type != JSON_OBJECT)
+        return NULL;
+
     message = json_object_get(inputs, "MESSAGE");
-
-    if (message == NULL ||
-        message->type != JSON_ARRAY ||
-        message->as.array.count < 2)
+    if (message == NULL || message->type != JSON_ARRAY || message->as.array.count < 2)
         return NULL;
 
-    literal = message->as.array.items[1];
+    tag = message->as.array.items[0];
+    body = message->as.array.items[1];
 
-    if (literal == NULL)
+    if (tag == NULL || tag->type != JSON_NUMBER)
         return NULL;
 
-    if (literal->type == JSON_STRING)
-        return sb3_strdup_local(literal->as.string);
-
-    if (literal->type != JSON_ARRAY ||
-        literal->as.array.count < 2)
+    /* Seulement les littéraux (kind == 1) */
+    if ((int)tag->as.number != 1)
         return NULL;
 
-    literal = literal->as.array.items[1];
-
-    if (literal == NULL || literal->type != JSON_STRING)
+    if (body == NULL)
         return NULL;
 
-    return sb3_strdup_local(literal->as.string);
+    /* format [1, [10, "texte"]] ou [1, "texte"] */
+    if (body->type == JSON_STRING)
+        return sb3_strdup_local(body->as.string);
+
+    if (body->type == JSON_ARRAY && body->as.array.count >= 2) {
+        const JsonValue *inner = body->as.array.items[1];
+        if (inner != NULL && inner->type == JSON_STRING)
+            return sb3_strdup_local(inner->as.string);
+    }
+
+    return NULL;
 }
 
 static int sb3_block_from_json(const char *block_id, const JsonValue *block_value, SB3Block *block)
@@ -1268,7 +1275,8 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->substack = sb3_read_substack(block_value);
     break;
     case SB3_BLOCK_KIND_LOOKS_SAY:
-    block->message = sb3_read_message(block_value);
+    sb3_parse_input_at(block_value, "MESSAGE", &block->input_message);
+    block->message = sb3_read_message(block_value);  /* maintenant safe */
     break;
     case SB3_BLOCK_KIND_CONTROL_FOREVER:
     block->substack = sb3_read_substack(block_value);
@@ -1310,22 +1318,25 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->has_motion_sety = 1;
     break;  
     case SB3_BLOCK_KIND_LOOKS_SETSIZETO:
+    sb3_parse_input_at(block_value, "SIZE", &block->input_size);
     block->size_value = sb3_read_coordinate_value(block_value, "SIZE");
     block->has_size_value = 1;
-    break;  
+    break;
     case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:
+    sb3_parse_input_at(block_value, "CHANGE", &block->input_change);
     block->size_value = sb3_read_coordinate_value(block_value, "CHANGE");
     block->has_size_value = 1;
-    break;  
-    case SB3_BLOCK_KIND_LOOKS_THINK:  
-    block->message = sb3_read_message(block_value);   // même fonction que pour looks_say  
-    break;  
+    break;
+    case SB3_BLOCK_KIND_LOOKS_THINK:
+    sb3_parse_input_at(block_value, "MESSAGE", &block->input_message);
+    block->message = sb3_read_message(block_value);
+    break;
     case SB3_BLOCK_KIND_LOOKS_SHOW:
     // rien à lire
-    break;  
-    case SB3_BLOCK_KIND_LOOKS_HIDE:  
-    // rien à lire  
     break;
+    case SB3_BLOCK_KIND_LOOKS_HIDE:  
+     // rien à lire
+    break; 
 
     case SB3_BLOCK_KIND_OPERATOR_ADD:
     case SB3_BLOCK_KIND_OPERATOR_SUBTRACT:
