@@ -23,8 +23,8 @@ make pytest
 
 ## clean
 make clean
-
 ```
+
 ---
 
 ## Work in progress
@@ -134,23 +134,23 @@ make clean
 - [ ] `username` (`sensing_username`)
 
 #### Operators
-- [ ] `num1` + `num2` (`operator_add`)
-- [ ] `num1` - `num2` (`operator_subtract`)
-- [ ] `num1` * `num2` (`operator_multiply`)
-- [ ] `num1` / `num2` (`operator_divide`)
-- [ ] pick random `min` to `max` (`operator_random`)
-- [ ] `val1` > `val2` (`operator_gt`)
-- [ ] `val1` < `val2` (`operator_lt`)
-- [ ] `val1` = `val2` (`operator_equals`)
-- [ ] `condition1` and `condition2` (`operator_and`)
-- [ ] `condition1` or `condition2` (`operator_or`)
-- [ ] not `condition` (`operator_not`)
+- [x] `num1` + `num2` (`operator_add`)
+- [x] `num1` - `num2` (`operator_subtract`)
+- [x] `num1` * `num2` (`operator_multiply`)
+- [x] `num1` / `num2` (`operator_divide`)
+- [x] pick random `min` to `max` (`operator_random`)
+- [x] `val1` > `val2` (`operator_gt`)
+- [x] `val1` < `val2` (`operator_lt`)
+- [x] `val1` = `val2` (`operator_equals`)
+- [x] `condition1` and `condition2` (`operator_and`)
+- [x] `condition1` or `condition2` (`operator_or`)
+- [x] not `condition` (`operator_not`)
 - [ ] join `string1` `string2` (`operator_join`)
 - [ ] letter `n` of `string` (`operator_letter_of`)
 - [ ] length of `string` (`operator_length`)
 - [ ] `string` contains `substring` ? (`operator_contains`)
-- [ ] `num1` mod `num2` (`operator_mod`)
-- [ ] round `n` (`operator_round`)
+- [x] `num1` mod `num2` (`operator_mod`)
+- [x] round `n` (`operator_round`)
 - [ ] `(abs, floor, ceiling, sqrt, sin, cos, tan, asin, acos, atan, ln, log, e ^, 10 ^)` of `n` (`operator_mathop`)
 
 #### Variables
@@ -184,5 +184,4 @@ make clean
 
 ## License
 
-licensed under the MIT License.
-
+licensed under the MIT License
