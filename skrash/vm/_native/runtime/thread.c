@@ -2,11 +2,7 @@
 #include "blocks/blocks.h"
 #include <stddef.h>
 #include <time.h>
-
-static double sb3_now_seconds(void)
-{
-    return (double)time(NULL);
-}
+#include "time_util.h"
 
 static void sb3_thread_finish_body(SB3Thread *thread, const SB3Block *next)
 {

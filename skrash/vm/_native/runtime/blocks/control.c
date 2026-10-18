@@ -1,11 +1,6 @@
 #include "blocks.h"
 
-#include <time.h>
-
-static double sb3_now_seconds(void)
-{
-    return (double)time(NULL);
-}
+#include "../time_util.h"
 
 int sb3_control_execute(SB3Thread *thread, const SB3Block *block)
 {
