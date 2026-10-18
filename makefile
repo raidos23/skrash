@@ -19,6 +19,9 @@ OBJECTS = $(patsubst $(SRC_DIR)/%.c,$(BUILD_DIR)/%.o,$(SOURCES))
 
 MODULE_OBJECT = $(BUILD_DIR)/module.o
 
+# Tous les headers de la lib C
+HEADERS = $(shell find $(SRC_DIR) -name '*.h')
+
 C_TEST_SOURCES = $(wildcard $(TEST_DIR)/*.c)
 C_TESTS = $(patsubst $(TEST_DIR)/%.c,$(BUILD_DIR)/%.bin,$(C_TEST_SOURCES))
 
@@ -30,13 +33,14 @@ $(TARGET): $(OBJECTS) $(MODULE_OBJECT)
 	@mkdir -p $(dir $@)
 	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
 
-$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
+# Toute modification d'un header recompile TOUS les .o
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 	@mkdir -p $(dir $@)
 	$(CC) $(CFLAGS) -I$(SRC_DIR) -c $< -o $@
 
-$(BUILD_DIR)/%.bin: $(TEST_DIR)/%.c $(OBJECTS)
+$(BUILD_DIR)/%.bin: $(TEST_DIR)/%.c $(OBJECTS) $(HEADERS)
 	@mkdir -p $(dir $@)
-	$(CC) -std=c17 -Wall -Wextra -I$(SRC_DIR) $^ $(LIBS) -o $@
+	$(CC) -std=c17 -Wall -Wextra -I$(SRC_DIR) $(TEST_DIR)/$*.c $(OBJECTS) $(LIBS) -o $@
 
 ctest: $(C_TESTS)
 	@for test in $(C_TESTS); do \
