@@ -117,6 +117,7 @@ static void sb3_block_init(SB3Block *block)
     block->motion_x = 0.0;
     block->motion_y = 0.0;
     block->has_motion_gotoxy = 0;
+    block->substack_else = NULL;
     sb3_input_init(&block->input_steps);
     sb3_input_init(&block->input_degrees);
     sb3_input_init(&block->input_times);
@@ -129,7 +130,7 @@ static void sb3_block_init(SB3Block *block)
     sb3_input_init(&block->input_message);
     sb3_input_init(&block->input_num1);
     sb3_input_init(&block->input_num2);
-
+    sb3_input_init(&block->input_condition);
 
 }
 
@@ -615,6 +616,7 @@ static void sb3_block_free(SB3Block *block)
     free(block->parent);
     free(block->substack);
     free(block->message);
+    free(block->substack_else);
     sb3_input_free(&block->input_steps);
     sb3_input_free(&block->input_degrees);
     sb3_input_free(&block->input_times);
@@ -627,6 +629,7 @@ static void sb3_block_free(SB3Block *block)
     sb3_input_free(&block->input_message);
     sb3_input_free(&block->input_num1);
     sb3_input_free(&block->input_num2);
+    sb3_input_free(&block->input_condition);
     sb3_block_init(block);
 }
 
@@ -907,6 +910,8 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "operator_and")      == 0) return SB3_BLOCK_KIND_OPERATOR_AND;
     if (strcmp(opcode, "operator_or")       == 0) return SB3_BLOCK_KIND_OPERATOR_OR;
     if (strcmp(opcode, "operator_not")      == 0) return SB3_BLOCK_KIND_OPERATOR_NOT;
+    if (strcmp(opcode, "control_if")      == 0) return SB3_BLOCK_KIND_CONTROL_IF;
+    if (strcmp(opcode, "control_if_else") == 0) return SB3_BLOCK_KIND_CONTROL_IF_ELSE;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1231,6 +1236,34 @@ static char *sb3_read_message(const JsonValue *block_value)
     return NULL;
 }
 
+static char *sb3_read_substack2(const JsonValue *block_value)
+{
+    const JsonValue *inputs = json_object_get(block_value, "inputs");
+    const JsonValue *sub = json_object_get(inputs, "SUBSTACK2");
+    const JsonValue *value;
+
+    if (sub == NULL ||
+        sub->type != JSON_ARRAY ||
+        sub->as.array.count < 2)
+        return NULL;
+
+    value = sub->as.array.items[1];
+    if (value == NULL || value->type == JSON_NULL)
+        return NULL;
+
+    if (value->type == JSON_STRING)
+        return sb3_strdup_local(value->as.string);
+
+    if (value->type == JSON_ARRAY &&
+        value->as.array.count >= 2) {
+        value = value->as.array.items[1];
+        if (value != NULL && value->type == JSON_STRING)
+            return sb3_strdup_local(value->as.string);
+    }
+
+    return NULL;
+}
+
 static int sb3_block_from_json(const char *block_id, const JsonValue *block_value, SB3Block *block)
 {
     const char *opcode;
@@ -1367,6 +1400,17 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     sb3_parse_input_at(block_value, "OPERAND", &block->input_num1);
     break;
 
+    case SB3_BLOCK_KIND_CONTROL_IF:
+    sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
+    block->substack = sb3_read_substack(block_value);
+    break;
+
+    case SB3_BLOCK_KIND_CONTROL_IF_ELSE:
+    sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
+    block->substack = sb3_read_substack(block_value);
+    block->substack_else = sb3_read_substack2(block_value);
+    break;
+    
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:

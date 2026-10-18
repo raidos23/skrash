@@ -131,6 +131,49 @@ int sb3_thread_step(SB3Thread *thread)
 
         return thread->running;
     }
+    if (block->kind == SB3_BLOCK_KIND_CONTROL_IF || block->kind == SB3_BLOCK_KIND_CONTROL_IF_ELSE) {
+        double cond = 0.0;
+        if (!sb3_input_evaluate(thread, &block->input_condition, &cond)) {
+            thread->running = 0;
+        return 0;
+    } 
+    const char *branch_id = NULL;
+    if (cond != 0.0) {
+        branch_id = block->substack;
+    } else if (block->kind == SB3_BLOCK_KIND_CONTROL_IF_ELSE) {
+        branch_id = block->substack_else;
+    }
+
+    const SB3Block *branch = NULL;
+    if (branch_id != NULL)
+        branch = sb3_target_find_block(thread->target, branch_id);
+
+    if (branch != NULL) {
+        if (thread->repeat_depth >= SB3_RUNTIME_MAX_REPEAT_DEPTH) {
+            thread->running = 0;
+            return 0;
+        }
+
+        SB3RepeatFrame *frame =
+            &thread->repeat_stack[thread->repeat_depth];
+        frame->repeat_block = block;
+        frame->body         = branch;
+        frame->forever      = 0;
+        frame->remaining    = 1;
+
+        thread->repeat_depth++;
+        thread->current_block = branch;
+        return 1;
+    }
+
+    // pas de branche : on saute au next du if
+    const SB3Block *next = NULL;
+    if (block->next != NULL)
+        next = sb3_target_find_block(thread->target, block->next);
+
+    sb3_thread_finish_body(thread, next);
+    return thread->running;
+}
 
     if (!sb3_block_execute(thread, block)) {
         thread->running = 0;

@@ -38,6 +38,8 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_OPERATOR_AND,
     SB3_BLOCK_KIND_OPERATOR_OR,
     SB3_BLOCK_KIND_OPERATOR_NOT,
+    SB3_BLOCK_KIND_CONTROL_IF,
+    SB3_BLOCK_KIND_CONTROL_IF_ELSE,
 } SB3BlockKind;
 
 typedef enum SB3InputKind {
@@ -71,6 +73,7 @@ typedef struct SB3Block {
     double repeat_times;
     int has_repeat_times;
     char *substack;
+    char *substack_else;
     char *message;
     double motion_x;
     double motion_y;
@@ -97,6 +100,7 @@ typedef struct SB3Block {
     SB3Input input_message;
     SB3Input input_num1;
     SB3Input input_num2;
+    SB3Input input_condition;
 } SB3Block;
 
 typedef struct SB3Target {
