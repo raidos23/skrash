@@ -105,3 +105,27 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
         return 0;
     }
 }
+
+int sb3_motion_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
+{
+    if (thread == NULL || block == NULL || out == NULL)
+        return 0;
+
+    switch (block->kind) {
+
+    case SB3_BLOCK_KIND_MOTION_XPOSITION:
+        *out = thread->target->x;
+        return 1;
+
+    case SB3_BLOCK_KIND_MOTION_YPOSITION:
+        *out = thread->target->y;
+        return 1;
+
+    case SB3_BLOCK_KIND_MOTION_DIRECTION:
+        *out = thread->target->direction;
+        return 1;
+
+    default:
+        return 0;
+    }
+}

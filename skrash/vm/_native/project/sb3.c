@@ -912,6 +912,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "operator_not")      == 0) return SB3_BLOCK_KIND_OPERATOR_NOT;
     if (strcmp(opcode, "control_if")      == 0) return SB3_BLOCK_KIND_CONTROL_IF;
     if (strcmp(opcode, "control_if_else") == 0) return SB3_BLOCK_KIND_CONTROL_IF_ELSE;
+    if (strcmp(opcode, "motion_xposition") == 0) return SB3_BLOCK_KIND_MOTION_XPOSITION;
+    if (strcmp(opcode, "motion_yposition") == 0) return SB3_BLOCK_KIND_MOTION_YPOSITION;
+    if (strcmp(opcode, "motion_direction") == 0) return SB3_BLOCK_KIND_MOTION_DIRECTION;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1410,7 +1413,7 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->substack = sb3_read_substack(block_value);
     block->substack_else = sb3_read_substack2(block_value);
     break;
-    
+
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:

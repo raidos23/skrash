@@ -60,6 +60,11 @@ int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
     case SB3_BLOCK_KIND_OPERATOR_NOT:
         return sb3_operator_evaluate(thread, block, out);
 
+    case SB3_BLOCK_KIND_MOTION_XPOSITION:
+    case SB3_BLOCK_KIND_MOTION_YPOSITION:
+    case SB3_BLOCK_KIND_MOTION_DIRECTION:
+    return sb3_motion_evaluate(thread, block, out);
+
     default:
         return 0;
     }

@@ -17,5 +17,6 @@ int sb3_looks_execute     (SB3Thread *thread, const SB3Block *block);
 int sb3_control_execute   (SB3Thread *thread, const SB3Block *block);
 int sb3_events_execute    (SB3Thread *thread, const SB3Block *block);
 int sb3_operator_evaluate (SB3Thread *thread, const SB3Block *block, double *out);
+int sb3_motion_evaluate(SB3Thread *thread, const SB3Block *block, double *out);
 
 #endif
