@@ -1270,6 +1270,7 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->has_motion_turn_degrees = -1;
     break;
     case SB3_BLOCK_KIND_CONTROL_REPEAT:
+    sb3_parse_input_at(block_value, "TIMES", &block->input_times);
     block->repeat_times = sb3_read_repeat_times(block_value);
     block->has_repeat_times = 1;
     block->substack = sb3_read_substack(block_value);
@@ -1299,6 +1300,7 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->has_motion_sety = 1;
     break;
     case SB3_BLOCK_KIND_CONTROL_WAIT:
+    sb3_parse_input_at(block_value, "DURATION", &block->input_duration);
     block->wait_seconds = sb3_read_coordinate_value(block_value, "DURATION");
     block->has_wait_seconds = 1;
     break;
