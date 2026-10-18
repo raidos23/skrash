@@ -1,5 +1,5 @@
 #include <stdio.h>
-
+#include <stdlib.h>
 #include "../skrash/vm/_native/project/sb3.h"
 #include "../skrash/vm/_native/runtime/runtime.h"
 
@@ -29,23 +29,32 @@ int main(void)
         return 1;
     }
 
-    while (runtime.threads[0].running) {
-        const SB3Block *block = runtime.threads[0].current_block;
+ /* memoire du dernier bloc affiche par thread */
+    const SB3Block **last_seen = calloc(runtime.thread_count,
+                                        sizeof(*last_seen));
+    if (last_seen == NULL) {
+        sb3_runtime_free(&runtime);
+        sb3_project_free(project);
+        return 1;
+    }
 
-        if (!sb3_runtime_step(&runtime)) {
-            fprintf(stderr, "Error during execution.\n");
-            break;
-        }
+    while (sb3_runtime_step(&runtime)) {
+        for (size_t i = 0; i < runtime.thread_count; ++i) {
+            SB3Thread *th = &runtime.threads[i];
+            if (!th->running) continue;
 
-        if (block != NULL) {
-            printf(
-                "executed: %s | x=%.2f y=%.2f direction=%.2f\n size=%.2f",
-                block->opcode,
-                runtime.threads[0].target->x,
-                runtime.threads[0].target->y,
-                runtime.threads[0].target->direction,
-                runtime.threads[0].target->size
-            );
+            const SB3Block *block = th->current_block;
+            if (block == NULL) continue;
+
+            /* n'affiche que si le bloc change */
+            if (block == last_seen[i]) continue;
+            last_seen[i] = block;
+
+            printf("executed: %s | x=%.2f y=%.2f direction=%.2f\n",
+                   block->opcode,
+                   th->target->x,
+                   th->target->y,
+                   th->target->direction);
         }
     }
 
