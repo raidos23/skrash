@@ -48,9 +48,9 @@ make clean
 - [ ] if on edge bounce (`motion_ifonedgebounce`)
 - [ ] set rotation style `(left-right, all around, don't rotate)` (`motion_setrotationstyle`)
 ##### Motions variables
-- [ ] `x position` (`motion_xposition`)
-- [ ] `y position` (`motion_yposition`)
-- [ ] `direction` (`motion_direction`)
+- [x] `x position` (`motion_xposition`)
+- [x] `y position` (`motion_yposition`)
+- [x] `direction` (`motion_direction`)
 
 #### Looks
 - [ ] say `message` for `n` seconds (`looks_sayforsecs`)
