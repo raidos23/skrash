@@ -1,8 +1,8 @@
 #include "blocks.h"
-
 #include <math.h>
 #include <stdlib.h>
-
+#include <string.h>
+#include <stdio.h>
 #include "../../project/sb3.h"
 #include "../thread.h"
 
@@ -135,6 +135,50 @@ int sb3_operator_evaluate(SB3Thread *thread,
         double a = 0.0;
         if (!sb3_input_evaluate(thread, &block->input_num1, &a)) return 0;
         *out = (a == 0.0) ? 1.0 : 0.0;
+        return 1;
+    }
+
+    default:
+        return 0;
+    }
+}
+
+int sb3_operator_evaluate_string(SB3Thread *thread,
+                                 const SB3Block *block,
+                                 char *out, size_t out_size)
+{
+    if (thread == NULL || block == NULL || out == NULL || out_size == 0)
+        return 0;
+
+    out[0] = '\0';
+
+    switch (block->kind) {
+
+    case SB3_BLOCK_KIND_OPERATOR_JOIN: {
+        char a[256], b[256];
+        if (!sb3_input_evaluate_string(thread, &block->input_num1, a, sizeof(a)))
+            return 0;
+        if (!sb3_input_evaluate_string(thread, &block->input_num2, b, sizeof(b)))
+            return 0;
+        snprintf(out, out_size, "%s%s", a, b);
+        return 1;
+    }
+
+    case SB3_BLOCK_KIND_OPERATOR_LENGTH: {
+        char s[1024];
+        if (!sb3_input_evaluate_string(thread, &block->input_num1, s, sizeof(s)))
+            return 0;
+        snprintf(out, out_size, "%d", (int)strlen(s));
+        return 1;
+    }
+
+    case SB3_BLOCK_KIND_OPERATOR_CONTAINS: {
+        char a[512], b[512];
+        if (!sb3_input_evaluate_string(thread, &block->input_num1, a, sizeof(a)))
+            return 0;
+        if (!sb3_input_evaluate_string(thread, &block->input_num2, b, sizeof(b)))
+            return 0;
+        snprintf(out, out_size, "%d", strstr(a, b) != NULL ? 1 : 0);
         return 1;
     }
 

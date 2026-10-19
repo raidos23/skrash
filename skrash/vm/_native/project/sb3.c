@@ -915,6 +915,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "motion_xposition") == 0) return SB3_BLOCK_KIND_MOTION_XPOSITION;
     if (strcmp(opcode, "motion_yposition") == 0) return SB3_BLOCK_KIND_MOTION_YPOSITION;
     if (strcmp(opcode, "motion_direction") == 0) return SB3_BLOCK_KIND_MOTION_DIRECTION;
+    if (strcmp(opcode, "operator_join")     == 0) return SB3_BLOCK_KIND_OPERATOR_JOIN;
+    if (strcmp(opcode, "operator_length")   == 0) return SB3_BLOCK_KIND_OPERATOR_LENGTH;
+    if (strcmp(opcode, "operator_contains") == 0) return SB3_BLOCK_KIND_OPERATOR_CONTAINS;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1413,7 +1416,20 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->substack = sb3_read_substack(block_value);
     block->substack_else = sb3_read_substack2(block_value);
     break;
+    case SB3_BLOCK_KIND_OPERATOR_JOIN:
+    sb3_parse_input_at(block_value, "STRING1", &block->input_num1);
+    sb3_parse_input_at(block_value, "STRING2", &block->input_num2);
+    break;
 
+    case SB3_BLOCK_KIND_OPERATOR_LENGTH:
+    sb3_parse_input_at(block_value, "STRING", &block->input_num1);
+    break;
+
+    case SB3_BLOCK_KIND_OPERATOR_CONTAINS:
+    sb3_parse_input_at(block_value, "STRING1", &block->input_num1);
+    sb3_parse_input_at(block_value, "STRING2", &block->input_num2);
+    break;
+    
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:

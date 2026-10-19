@@ -36,6 +36,41 @@ int sb3_input_evaluate(SB3Thread *thread, const SB3Input *in, double *out)
     }
 }
 
+int sb3_input_evaluate_string(SB3Thread *thread, const SB3Input *in,
+                              char *out, size_t out_size)
+{
+    if (thread == NULL || in == NULL || out == NULL || out_size == 0)
+        return 0;
+
+    out[0] = '\0';
+
+    switch (in->kind) {
+
+    case SB3_INPUT_KIND_LITERAL:
+        if (in->literal_string != NULL)
+            snprintf(out, out_size, "%s", in->literal_string);
+        else
+            snprintf(out, out_size, "%g", in->literal_number);
+        return 1;
+
+    case SB3_INPUT_KIND_BLOCK:
+    case SB3_INPUT_KIND_BLOCK_ONLY: {
+        const SB3Block *inner =
+            sb3_target_find_block(thread->target, in->block_id);
+        if (inner == NULL) {
+            if (in->literal_string != NULL)
+                snprintf(out, out_size, "%s", in->literal_string);
+            else
+                snprintf(out, out_size, "%g", in->literal_number);
+            return 1;
+        }
+        return sb3_block_evaluate_string(thread, inner, out, out_size);
+    }
+
+    default:
+        return 0;
+    }
+}
 
 // dispatch d'evaluation  
 int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
@@ -64,6 +99,11 @@ int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
     case SB3_BLOCK_KIND_MOTION_YPOSITION:
     case SB3_BLOCK_KIND_MOTION_DIRECTION:
     return sb3_motion_evaluate(thread, block, out);
+    case SB3_BLOCK_KIND_OPERATOR_JOIN:
+    case SB3_BLOCK_KIND_OPERATOR_LENGTH:
+    case SB3_BLOCK_KIND_OPERATOR_CONTAINS:
+    // pas numerique 
+    return 0;
 
     default:
         return 0;
@@ -105,5 +145,32 @@ int sb3_block_execute(SB3Thread *thread, const SB3Block *block)
 
     default:
         return 0;
+    }
+}
+
+int sb3_block_evaluate_string(SB3Thread *thread,
+                              const SB3Block *block,
+                              char *out, size_t out_size)
+{
+    if (thread == NULL || block == NULL || out == NULL || out_size == 0)
+        return 0;
+
+    out[0] = '\0';
+
+    switch (block->kind) {
+
+    case SB3_BLOCK_KIND_OPERATOR_JOIN:
+    case SB3_BLOCK_KIND_OPERATOR_LENGTH:
+    case SB3_BLOCK_KIND_OPERATOR_CONTAINS:
+        return sb3_operator_evaluate_string(thread, block, out, out_size);
+
+
+    default: {
+        double v = 0.0;
+        if (!sb3_block_evaluate(thread, block, &v))
+            return 0;
+        snprintf(out, out_size, "%g", v);
+        return 1;
+    }
     }
 }

@@ -15,26 +15,14 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
     const char *prefix = (block->kind == SB3_BLOCK_KIND_LOOKS_SAY)
                          ? "(say)" : "(think)";
 
-    /* 1. Si on a un littéral string → on l’utilise */
-    if (block->input_message.kind == SB3_INPUT_KIND_LITERAL &&
-        block->input_message.literal_string != NULL) {
-        printf("%s %s\n", prefix, block->input_message.literal_string);
+    char buf[512];
+    if (!sb3_input_evaluate_string(thread, &block->input_message,
+                                   buf, sizeof(buf))) {
+        printf("%s \n", prefix);
         return 1;
     }
 
-    /* 2. Si c’est un bloc (opérateur / reporter) → on évalue en nombre */
-    if (block->input_message.kind == SB3_INPUT_KIND_BLOCK ||
-        block->input_message.kind == SB3_INPUT_KIND_BLOCK_ONLY) {
-        double value = 0.0;
-        if (sb3_input_evaluate(thread, &block->input_message, &value)) {
-            printf("%s %g\n", prefix, value);
-            return 1;
-        }
-    }
-
-    /* 3. Fallback sur l’ancien champ message */
-    printf("%s %s\n", prefix,
-           block->message != NULL ? block->message : "");
+    printf("%s %s\n", prefix, buf);
     return 1;
 }
 
