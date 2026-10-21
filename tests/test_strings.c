@@ -45,7 +45,7 @@ int main(void)
         "(say) 7\n"
         "(say) 1\n"
         "(say) 0\n"
-        "(say) Score : 5\n";
+        "(say) Score:5\n";
 
     int ok = (strcmp(output, expected) == 0);
 

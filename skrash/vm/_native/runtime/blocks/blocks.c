@@ -102,8 +102,11 @@ int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
     case SB3_BLOCK_KIND_OPERATOR_JOIN:
     case SB3_BLOCK_KIND_OPERATOR_LENGTH:
     case SB3_BLOCK_KIND_OPERATOR_CONTAINS:
+    case SB3_BLOCK_KIND_OPERATOR_LETTER_OF:
     // pas numerique 
     return 0;
+    case SB3_BLOCK_KIND_OPERATOR_MATHOP:
+    return sb3_operator_evaluate(thread, block, out);
 
     default:
         return 0;
@@ -162,7 +165,9 @@ int sb3_block_evaluate_string(SB3Thread *thread,
     case SB3_BLOCK_KIND_OPERATOR_JOIN:
     case SB3_BLOCK_KIND_OPERATOR_LENGTH:
     case SB3_BLOCK_KIND_OPERATOR_CONTAINS:
+    case SB3_BLOCK_KIND_OPERATOR_LETTER_OF:
         return sb3_operator_evaluate_string(thread, block, out, out_size);
+        
 
 
     default: {

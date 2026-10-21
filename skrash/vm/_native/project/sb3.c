@@ -569,6 +569,24 @@ static const JsonValue *json_object_get(const JsonValue *object, const char *key
     return NULL;
 }
 
+
+static char *sb3_read_field_string(const JsonValue *block_value, const char *name)
+{
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *field = fields ? json_object_get(fields, name) : NULL;
+    const JsonValue *value;
+
+    if (field == NULL || field->type != JSON_ARRAY || field->as.array.count < 1)
+        return NULL;
+
+    value = field->as.array.items[0];
+    if (value != NULL && value->type == JSON_STRING)
+        return sb3_strdup_local(value->as.string);
+
+    return NULL;
+}
+
+
 static int json_get_bool(const JsonValue *object, const char *key, int default_value)
 {
     const JsonValue *value = json_object_get(object, key);
@@ -918,6 +936,8 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "operator_join")     == 0) return SB3_BLOCK_KIND_OPERATOR_JOIN;
     if (strcmp(opcode, "operator_length")   == 0) return SB3_BLOCK_KIND_OPERATOR_LENGTH;
     if (strcmp(opcode, "operator_contains") == 0) return SB3_BLOCK_KIND_OPERATOR_CONTAINS;
+    if (strcmp(opcode, "operator_letter_of") == 0) return SB3_BLOCK_KIND_OPERATOR_LETTER_OF;
+    if (strcmp(opcode, "operator_mathop")    == 0) return SB3_BLOCK_KIND_OPERATOR_MATHOP;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1429,6 +1449,15 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     sb3_parse_input_at(block_value, "STRING1", &block->input_num1);
     sb3_parse_input_at(block_value, "STRING2", &block->input_num2);
     break;
+    case SB3_BLOCK_KIND_OPERATOR_LETTER_OF:
+    sb3_parse_input_at(block_value, "LETTER", &block->input_num1);
+    sb3_parse_input_at(block_value, "STRING", &block->input_num2);
+    break;
+    
+    case SB3_BLOCK_KIND_OPERATOR_MATHOP:
+    sb3_parse_input_at(block_value, "NUM", &block->input_num1);
+    block->message = sb3_read_field_string(block_value, "OPERATOR");
+    break;
     
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
@@ -1621,3 +1650,4 @@ const SB3Block *sb3_target_find_block_by_kind(const SB3Target *target, SB3BlockK
 
     return NULL;
 }
+
