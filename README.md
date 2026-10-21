@@ -146,12 +146,12 @@ make clean
 - [x] `condition1` or `condition2` (`operator_or`)
 - [x] not `condition` (`operator_not`)
 - [x] join `string1` `string2` (`operator_join`)
-- [ ] letter `n` of `string` (`operator_letter_of`)
+- [x] letter `n` of `string` (`operator_letter_of`)
 - [x] length of `string` (`operator_length`)
 - [x] `string` contains `substring` ? (`operator_contains`)
 - [x] `num1` mod `num2` (`operator_mod`)
 - [x] round `n` (`operator_round`)
-- [ ] `(abs, floor, ceiling, sqrt, sin, cos, tan, asin, acos, atan, ln, log, e ^, 10 ^)` of `n` (`operator_mathop`)
+- [x] `(abs, floor, ceiling, sqrt, sin, cos, tan, asin, acos, atan, ln, log, e ^, 10 ^)` of `n` (`operator_mathop`)
 
 #### Variables
 ##### Variables
