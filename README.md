@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/raidos23/skrash/main/docs/img/skrash.png " alt="skrash logo" weight="20%" width="80%"/>
+</p>
+
 # SKRASH
 
 **skrash** is a Scratch 3.0 (`.sb3`) project runtime and executor.
