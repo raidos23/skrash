@@ -1624,10 +1624,6 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     default:
         break;
 }
-if (block->opcode && strcmp(block->opcode, "data_listcontainsitem") == 0) {
-    fprintf(stderr, "[parse] opcode=%s kind=%d num1.kind=%d\n",
-            block->opcode, block->kind, block->input_num1.kind);
-}
     return 1;
 }
 
@@ -1889,12 +1885,9 @@ const SB3Block *sb3_target_find_block(const SB3Target *target, const char *block
     for (size_t i = 0; i < target->block_count; ++i) {
         const SB3Block *b = &target->blocks[i];
         if (b->block_id && strcmp(b->block_id, block_id) == 0) {
-            fprintf(stderr, "[find] looking for '%s', found block[%zu] kind=%d opcode=%s\n",
-                    block_id, i, b->kind, b->opcode ? b->opcode : "?");
             return b;
         }
     }
-    fprintf(stderr, "[find] looking for '%s', NOT FOUND\n", block_id);
     return NULL;
 }
 

@@ -167,16 +167,6 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 
 int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
 {
-    fprintf(stderr, "[eval] kind=%d list='%s' num1.kind=%d num1.str='%s'\n",
-        block->kind,
-        block->list_name ? block->list_name : "(null)",
-        block->input_num1.kind,
-        block->input_num1.literal_string ? block->input_num1.literal_string : "(null)");
-    // dans data.c, avant le switch
-    fprintf(stderr, "[eval] kind=%d LISTCONTAINS=%d\n",
-        block->kind,
-        SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM);
-
     if (thread == NULL || block == NULL || out == NULL ||
         thread->runtime == NULL)
         return 0;
