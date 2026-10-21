@@ -21,5 +21,7 @@ int sb3_motion_evaluate(SB3Thread *thread, const SB3Block *block, double *out);
 int sb3_input_evaluate_string(SB3Thread *thread, const SB3Input *in, char *out, size_t out_size);
 int sb3_block_evaluate_string(SB3Thread *thread, const SB3Block *block, char *out, size_t out_size);
 int sb3_operator_evaluate_string(SB3Thread *thread, const SB3Block *block, char *out, size_t out_size);
-
+int sb3_data_execute(SB3Thread *thread, const SB3Block *block);
+int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out);
+int sb3_data_evaluate_string(SB3Thread *thread, const SB3Block *block, char *out, size_t out_size);
 #endif

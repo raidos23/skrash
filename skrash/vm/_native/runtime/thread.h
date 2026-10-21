@@ -2,11 +2,11 @@
 #define SKRASH_THREAD_H
 
 #include <stddef.h>
-
 #include "../project/sb3.h"
 
 #define SB3_RUNTIME_MAX_REPEAT_DEPTH 64
 
+typedef struct SB3Runtime SB3Runtime;
 typedef struct SB3RepeatFrame {
     const SB3Block *repeat_block;
     const SB3Block *body;
@@ -15,6 +15,7 @@ typedef struct SB3RepeatFrame {
 } SB3RepeatFrame;
 
 typedef struct SB3Thread {
+    SB3Runtime *runtime;
     SB3Target *target;
     const SB3Block *current_block;
 

@@ -2,6 +2,8 @@
 #include "../../project/sb3.h"
 #include <stdio.h>
 #include <string.h>
+#include "../../runtime/runtime.h"
+
 
 // evaluation d'une entrée 
 int sb3_input_evaluate(SB3Thread *thread, const SB3Input *in, double *out)
@@ -11,9 +13,23 @@ int sb3_input_evaluate(SB3Thread *thread, const SB3Input *in, double *out)
 
     switch (in->kind) {
 
-    case SB3_INPUT_KIND_LITERAL:
-        *out = in->literal_number;
+    case SB3_INPUT_KIND_LITERAL: {
+    /* Cas variable directe : [12, "nom", "id"] stockee comme LITERAL
+     * avec block_id non-NULL */
+    if (in->block_id != NULL && in->literal_string != NULL) {
+        SB3Variable *v = sb3_project_find_variable(
+            thread->runtime->project, thread->target,
+            in->literal_string);
+        if (v != NULL) {
+            *out = v->value;
+            return 1;
+        }
+        *out = 0.0;
         return 1;
+    }
+    *out = in->literal_number;
+    return 1;
+    }
 
     case SB3_INPUT_KIND_BLOCK: {
         const SB3Block *inner =
@@ -47,11 +63,22 @@ int sb3_input_evaluate_string(SB3Thread *thread, const SB3Input *in,
     switch (in->kind) {
 
     case SB3_INPUT_KIND_LITERAL:
-        if (in->literal_string != NULL)
-            snprintf(out, out_size, "%s", in->literal_string);
-        else
-            snprintf(out, out_size, "%g", in->literal_number);
+    if (in->block_id != NULL && in->literal_string != NULL) {
+        SB3Variable *v = sb3_project_find_variable(
+            thread->runtime->project, thread->target,
+            in->literal_string);
+        if (v != NULL) {
+            snprintf(out, out_size, "%g", v->value);
+            return 1;
+        }
+        out[0] = '\0';
         return 1;
+    }
+    if (in->literal_string != NULL)
+        snprintf(out, out_size, "%s", in->literal_string);
+    else
+        snprintf(out, out_size, "%g", in->literal_number);
+    return 1;
 
     case SB3_INPUT_KIND_BLOCK:
     case SB3_INPUT_KIND_BLOCK_ONLY: {
@@ -107,7 +134,11 @@ int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
     return 0;
     case SB3_BLOCK_KIND_OPERATOR_MATHOP:
     return sb3_operator_evaluate(thread, block, out);
-
+    case SB3_BLOCK_KIND_DATA_VARIABLE:
+    case SB3_BLOCK_KIND_DATA_LENGTHOFLIST:
+    case SB3_BLOCK_KIND_DATA_ITEMNUMOFLIST:
+    case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM:     
+    return sb3_data_evaluate(thread, block, out);
     default:
         return 0;
     }
@@ -146,6 +177,19 @@ int sb3_block_execute(SB3Thread *thread, const SB3Block *block)
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
         return sb3_events_execute(thread, block);
 
+    case SB3_BLOCK_KIND_DATA_SETVARIABLETO:
+    case SB3_BLOCK_KIND_DATA_CHANGEVARIABLEBY:
+    case SB3_BLOCK_KIND_DATA_SHOWVARIABLE:
+    case SB3_BLOCK_KIND_DATA_HIDEVARIABLE:
+    case SB3_BLOCK_KIND_DATA_ADDTOLIST:
+    case SB3_BLOCK_KIND_DATA_DELETEOFLIST:
+    case SB3_BLOCK_KIND_DATA_DELETEALLOFLIST:
+    case SB3_BLOCK_KIND_DATA_INSERTATLIST:
+    case SB3_BLOCK_KIND_DATA_REPLACEITEMOFLIST:
+    case SB3_BLOCK_KIND_DATA_SHOWLIST:
+    case SB3_BLOCK_KIND_DATA_HIDELIST:
+        return sb3_data_execute(thread, block);
+
     default:
         return 0;
     }
@@ -167,6 +211,10 @@ int sb3_block_evaluate_string(SB3Thread *thread,
     case SB3_BLOCK_KIND_OPERATOR_CONTAINS:
     case SB3_BLOCK_KIND_OPERATOR_LETTER_OF:
         return sb3_operator_evaluate_string(thread, block, out, out_size);
+    case SB3_BLOCK_KIND_DATA_ITEMOFLIST:
+    case SB3_BLOCK_KIND_DATA_LISTCONTENTS:
+    case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM:
+        return sb3_data_evaluate_string(thread, block, out, out_size);
         
 
 

@@ -118,6 +118,10 @@ static void sb3_block_init(SB3Block *block)
     block->motion_y = 0.0;
     block->has_motion_gotoxy = 0;
     block->substack_else = NULL;
+    block->variable_name = NULL;
+    block->variable_id = NULL;
+    block->list_name = NULL;
+    block->list_id = NULL;
     sb3_input_init(&block->input_steps);
     sb3_input_init(&block->input_degrees);
     sb3_input_init(&block->input_times);
@@ -148,6 +152,10 @@ static void sb3_target_init(SB3Target *target)
     target->direction = 90.0;
     target->size = 100.0;
     target->visible = 1;
+    target->variables = NULL;
+    target->variable_count = 0;
+    target->lists = NULL;
+    target->list_count = 0;
     
 }
 
@@ -635,6 +643,10 @@ static void sb3_block_free(SB3Block *block)
     free(block->substack);
     free(block->message);
     free(block->substack_else);
+    free(block->variable_name);
+    free(block->variable_id);
+    free(block->list_name);
+    free(block->list_id);
     sb3_input_free(&block->input_steps);
     sb3_input_free(&block->input_degrees);
     sb3_input_free(&block->input_times);
@@ -657,6 +669,20 @@ static void sb3_target_clear(SB3Target *target)
 
     if (target == NULL)
         return;
+
+    for (index = 0; index < target->variable_count; ++index) {
+    free(target->variables[index].id);
+    free(target->variables[index].name);
+    }
+    free(target->variables);
+    for (index = 0; index < target->list_count; ++index) {
+    free(target->lists[index].id);
+    free(target->lists[index].name);
+    for (size_t j = 0; j < target->lists[index].item_count; ++j)
+        free(target->lists[index].items[j]);
+    free(target->lists[index].items);  
+    }
+    free(target->lists);
 
     free(target->name);
 
@@ -938,6 +964,24 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "operator_contains") == 0) return SB3_BLOCK_KIND_OPERATOR_CONTAINS;
     if (strcmp(opcode, "operator_letter_of") == 0) return SB3_BLOCK_KIND_OPERATOR_LETTER_OF;
     if (strcmp(opcode, "operator_mathop")    == 0) return SB3_BLOCK_KIND_OPERATOR_MATHOP;
+    if (strcmp(opcode, "data_setvariableto")    == 0) return SB3_BLOCK_KIND_DATA_SETVARIABLETO;
+    if (strcmp(opcode, "data_changevariableby") == 0) return SB3_BLOCK_KIND_DATA_CHANGEVARIABLEBY;
+    if (strcmp(opcode, "data_showvariable")     == 0) return SB3_BLOCK_KIND_DATA_SHOWVARIABLE;
+    if (strcmp(opcode, "data_hidevariable")     == 0) return SB3_BLOCK_KIND_DATA_HIDEVARIABLE;
+    if (strcmp(opcode, "data_variable")         == 0) return SB3_BLOCK_KIND_DATA_VARIABLE;
+
+    if (strcmp(opcode, "data_addtolist")          == 0) return SB3_BLOCK_KIND_DATA_ADDTOLIST;
+    if (strcmp(opcode, "data_deleteoflist")       == 0) return SB3_BLOCK_KIND_DATA_DELETEOFLIST;
+    if (strcmp(opcode, "data_deletealloflist")    == 0) return SB3_BLOCK_KIND_DATA_DELETEALLOFLIST;
+    if (strcmp(opcode, "data_insertatlist")       == 0) return SB3_BLOCK_KIND_DATA_INSERTATLIST;
+    if (strcmp(opcode, "data_replaceitemoflist")  == 0) return SB3_BLOCK_KIND_DATA_REPLACEITEMOFLIST;
+    if (strcmp(opcode, "data_itemoflist")         == 0) return SB3_BLOCK_KIND_DATA_ITEMOFLIST;
+    if (strcmp(opcode, "data_itemnumoflist")      == 0) return SB3_BLOCK_KIND_DATA_ITEMNUMOFLIST;
+    if (strcmp(opcode, "data_lengthoflist")       == 0) return SB3_BLOCK_KIND_DATA_LENGTHOFLIST;
+    if (strcmp(opcode, "data_listcontainsitem")   == 0) return SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM;
+    if (strcmp(opcode, "data_showlist")           == 0) return SB3_BLOCK_KIND_DATA_SHOWLIST;
+    if (strcmp(opcode, "data_hidelist")           == 0) return SB3_BLOCK_KIND_DATA_HIDELIST;
+    if (strcmp(opcode, "data_listcontents")       == 0) return SB3_BLOCK_KIND_DATA_LISTCONTENTS;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -972,17 +1016,18 @@ static int sb3_parse_input(const JsonValue *input, SB3Input *out)
     int kind = (int)tag->as.number;
 
     if (kind == 1) {
-        out->kind = SB3_INPUT_KIND_LITERAL;
-        out->literal_number = sb3_shadow_number(body);
+    out->kind = SB3_INPUT_KIND_LITERAL;
+    out->literal_number = sb3_shadow_number(body);
 
-        if (body != NULL && body->type == JSON_ARRAY &&
-            body->as.array.count >= 2) {
-            const JsonValue *inner = body->as.array.items[1];
-            if (inner != NULL && inner->type == JSON_STRING)
-                out->literal_string = sb3_strdup_local(inner->as.string);
-        }
-        return 1;
+    /* Cas [1, [10, "poire"]] : lire la string aussi */
+    if (body != NULL && body->type == JSON_ARRAY &&
+        body->as.array.count >= 2) {
+        const JsonValue *inner = body->as.array.items[1];
+        if (inner != NULL && inner->type == JSON_STRING)
+            out->literal_string = sb3_strdup_local(inner->as.string);
     }
+    return 1;
+}
 
     if (kind == 2) {
         if (body == NULL || body->type != JSON_STRING) return 0;
@@ -990,9 +1035,12 @@ static int sb3_parse_input(const JsonValue *input, SB3Input *out)
         out->block_id = sb3_strdup_local(body->as.string);
         return out->block_id != NULL;
     }
-
+    
     if (kind == 3) {
-        if (body == NULL || body->type != JSON_STRING) return 0;
+    if (body == NULL) return 0;
+
+    /* Cas 1 : body est une string = block_id (format classique) */
+    if (body->type == JSON_STRING) {
         out->kind = SB3_INPUT_KIND_BLOCK;
         out->block_id = sb3_strdup_local(body->as.string);
         if (out->block_id == NULL) return 0;
@@ -1000,7 +1048,6 @@ static int sb3_parse_input(const JsonValue *input, SB3Input *out)
         if (input->as.array.count >= 3) {
             const JsonValue *shadow = input->as.array.items[2];
             out->literal_number = sb3_shadow_number(shadow);
-
             if (shadow != NULL && shadow->type == JSON_ARRAY &&
                 shadow->as.array.count >= 2) {
                 const JsonValue *inner = shadow->as.array.items[1];
@@ -1011,6 +1058,31 @@ static int sb3_parse_input(const JsonValue *input, SB3Input *out)
         return 1;
     }
 
+    /* Cas 2 : body est un tableau [12, "nom", "id"] = variable directe */
+    if (body->type == JSON_ARRAY && body->as.array.count >= 3) {
+        const JsonValue *tag = body->as.array.items[0];
+        if (tag == NULL || tag->type != JSON_NUMBER ||
+            (int)tag->as.number != 12)
+            return 0;
+
+        const JsonValue *name_j = body->as.array.items[1];
+        const JsonValue *id_j   = body->as.array.items[2];
+        if (name_j == NULL || name_j->type != JSON_STRING)
+            return 0;
+
+        out->kind = SB3_INPUT_KIND_LITERAL;
+        out->literal_string = sb3_strdup_local(name_j->as.string);
+        if (id_j != NULL && id_j->type == JSON_STRING)
+            out->block_id = sb3_strdup_local(id_j->as.string);
+
+        /* shadow de fallback */
+        if (input->as.array.count >= 3) {
+            const JsonValue *shadow = input->as.array.items[2];
+            out->literal_number = sb3_shadow_number(shadow);
+        }
+        return 1;
+    }
+    }
     return 0;
 }
 
@@ -1290,6 +1362,44 @@ static char *sb3_read_substack2(const JsonValue *block_value)
     return NULL;
 }
 
+static void sb3_parse_variable_field(const JsonValue *block_value, SB3Block *block)
+{
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *var    = fields ? json_object_get(fields, "VARIABLE") : NULL;
+
+    if (var == NULL || var->type != JSON_ARRAY || var->as.array.count < 1)
+        return;
+
+    const JsonValue *name_j = var->as.array.items[0];
+    if (name_j != NULL && name_j->type == JSON_STRING)
+        block->variable_name = sb3_strdup_local(name_j->as.string);
+
+    if (var->as.array.count >= 2) {
+        const JsonValue *id_j = var->as.array.items[1];
+        if (id_j != NULL && id_j->type == JSON_STRING)
+            block->variable_id = sb3_strdup_local(id_j->as.string);
+    }
+}
+
+static void sb3_parse_list_field(const JsonValue *block_value, SB3Block *block)
+{
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *list   = fields ? json_object_get(fields, "LIST") : NULL;
+
+    if (list == NULL || list->type != JSON_ARRAY || list->as.array.count < 1)
+        return;
+
+    const JsonValue *name_j = list->as.array.items[0];
+    if (name_j != NULL && name_j->type == JSON_STRING)
+        block->list_name = sb3_strdup_local(name_j->as.string);
+
+    if (list->as.array.count >= 2) {
+        const JsonValue *id_j = list->as.array.items[1];
+        if (id_j != NULL && id_j->type == JSON_STRING)
+            block->list_id = sb3_strdup_local(id_j->as.string);
+    }
+}
+
 static int sb3_block_from_json(const char *block_id, const JsonValue *block_value, SB3Block *block)
 {
     const char *opcode;
@@ -1458,12 +1568,163 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     sb3_parse_input_at(block_value, "NUM", &block->input_num1);
     block->message = sb3_read_field_string(block_value, "OPERATOR");
     break;
-    
+    case SB3_BLOCK_KIND_DATA_SETVARIABLETO:
+    sb3_parse_variable_field(block_value, block);
+    sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
+    break;
+    case SB3_BLOCK_KIND_DATA_CHANGEVARIABLEBY:
+    sb3_parse_variable_field(block_value, block);
+    sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
+    break;
+    case SB3_BLOCK_KIND_DATA_VARIABLE:
+    case SB3_BLOCK_KIND_DATA_SHOWVARIABLE:
+    case SB3_BLOCK_KIND_DATA_HIDEVARIABLE:
+    sb3_parse_variable_field(block_value, block);
+    break;
+    case SB3_BLOCK_KIND_DATA_ADDTOLIST:
+    sb3_parse_list_field(block_value, block);
+    sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
+    break;
+    case SB3_BLOCK_KIND_DATA_DELETEOFLIST:
+    sb3_parse_list_field(block_value, block);
+    sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
+    break;
+    case SB3_BLOCK_KIND_DATA_DELETEALLOFLIST:
+    case SB3_BLOCK_KIND_DATA_LENGTHOFLIST:
+    case SB3_BLOCK_KIND_DATA_SHOWLIST:
+    case SB3_BLOCK_KIND_DATA_HIDELIST:
+    case SB3_BLOCK_KIND_DATA_LISTCONTENTS:
+        sb3_parse_list_field(block_value, block);
+    break;
+    case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM:  
+    sb3_parse_list_field(block_value, block);
+    sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
+    break;
+    case SB3_BLOCK_KIND_DATA_INSERTATLIST:
+    sb3_parse_list_field(block_value, block);
+    sb3_parse_input_at(block_value, "ITEM",  &block->input_num1);
+    sb3_parse_input_at(block_value, "INDEX", &block->input_num2);
+    break;
+    case SB3_BLOCK_KIND_DATA_REPLACEITEMOFLIST:
+    sb3_parse_list_field(block_value, block);
+    sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
+    sb3_parse_input_at(block_value, "ITEM",  &block->input_num2);
+    break;
+    case SB3_BLOCK_KIND_DATA_ITEMOFLIST:
+    sb3_parse_list_field(block_value, block);
+    sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
+    break;
+    case SB3_BLOCK_KIND_DATA_ITEMNUMOFLIST:
+    sb3_parse_list_field(block_value, block);
+    sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
+    break;
+
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:
         break;
 }
+if (block->opcode && strcmp(block->opcode, "data_listcontainsitem") == 0) {
+    fprintf(stderr, "[parse] opcode=%s kind=%d num1.kind=%d\n",
+            block->opcode, block->kind, block->input_num1.kind);
+}
+    return 1;
+}
+
+static int sb3_parse_variables(const JsonValue *target_value, SB3Target *target)
+{
+    const JsonValue *vars = json_object_get(target_value, "variables");
+    if (vars == NULL || vars->type != JSON_OBJECT || vars->as.object.count == 0)
+        return 1;
+
+    target->variables = sb3_calloc(vars->as.object.count,
+                                    sizeof(*target->variables));
+    if (target->variables == NULL)
+        return 0;
+
+    for (size_t i = 0; i < vars->as.object.count; ++i) {
+        const JsonPair *pair = &vars->as.object.pairs[i];
+        const JsonValue *val = pair->value;
+
+        if (val == NULL || val->type != JSON_ARRAY || val->as.array.count < 2)
+            continue;
+
+        const JsonValue *name_j  = val->as.array.items[0];
+        const JsonValue *value_j = val->as.array.items[1];
+
+        if (name_j == NULL || name_j->type != JSON_STRING)
+            continue;
+
+        SB3Variable *v = &target->variables[target->variable_count];
+        v->id   = sb3_strdup_local(pair->key);
+        v->name = sb3_strdup_local(name_j->as.string);
+
+        if (value_j != NULL) {
+            if (value_j->type == JSON_NUMBER)
+                v->value = value_j->as.number;
+            else if (value_j->type == JSON_STRING)
+                v->value = strtod(value_j->as.string, NULL);
+        }
+
+        target->variable_count++;
+    }
+
+    return 1;
+}
+
+static int sb3_parse_lists(const JsonValue *target_value, SB3Target *target)
+{
+    const JsonValue *lists = json_object_get(target_value, "lists");
+    if (lists == NULL || lists->type != JSON_OBJECT || lists->as.object.count == 0)
+        return 1;
+
+    target->lists = sb3_calloc(lists->as.object.count, sizeof(*target->lists));
+    if (target->lists == NULL)
+        return 0;
+
+    for (size_t i = 0; i < lists->as.object.count; ++i) {
+        const JsonPair *pair = &lists->as.object.pairs[i];
+        const JsonValue *val = pair->value;
+
+        if (val == NULL || val->type != JSON_ARRAY || val->as.array.count < 2)
+            continue;
+
+        const JsonValue *name_j   = val->as.array.items[0];
+        const JsonValue *items_j  = val->as.array.items[1];
+
+        if (name_j == NULL || name_j->type != JSON_STRING)
+            continue;
+
+        SB3List *lst = &target->lists[target->list_count];
+        lst->id   = sb3_strdup_local(pair->key);
+        lst->name = sb3_strdup_local(name_j->as.string);
+        lst->items = NULL;
+        lst->item_count = 0;
+
+        if (items_j != NULL && items_j->type == JSON_ARRAY &&
+            items_j->as.array.count > 0) {
+            lst->items = sb3_calloc(items_j->as.array.count,
+                                     sizeof(char *));
+            if (lst->items != NULL) {
+                for (size_t j = 0; j < items_j->as.array.count; ++j) {
+                    const JsonValue *item = items_j->as.array.items[j];
+                    char buf[64];
+                    if (item == NULL) continue;
+                    if (item->type == JSON_STRING)
+                        lst->items[lst->item_count++] =
+                            sb3_strdup_local(item->as.string);
+                    else if (item->type == JSON_NUMBER) {
+                        snprintf(buf, sizeof(buf), "%g", item->as.number);
+                        lst->items[lst->item_count++] =
+                            sb3_strdup_local(buf);
+                    }
+                }
+            }
+        }
+
+        target->list_count++;
+    }
+
     return 1;
 }
 
@@ -1482,6 +1743,10 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
     target->direction = json_get_number(target_value, "direction", 90.0);
     target->size = json_get_number(target_value, "size", 100.0);
     target->visible =   json_get_bool(target_value, "visible", 1);
+    if (!sb3_parse_variables(target_value, target))
+    return 0;
+    if (!sb3_parse_lists(target_value, target))
+    return 0;
 
     blocks = json_object_get(target_value, "blocks");
     if (blocks != NULL && blocks->type == JSON_OBJECT && blocks->as.object.count > 0) {
@@ -1619,18 +1884,17 @@ void sb3_destroy(SB3Project *project)
 
 const SB3Block *sb3_target_find_block(const SB3Target *target, const char *block_id)
 {
-    size_t index;
+    if (target == NULL || block_id == NULL) return NULL;
 
-    if (target == NULL || block_id == NULL)
-        return NULL;
-
-    for (index = 0; index < target->block_count; ++index) {
-        const SB3Block *block = &target->blocks[index];
-
-        if (block->block_id != NULL && strcmp(block->block_id, block_id) == 0)
-            return block;
+    for (size_t i = 0; i < target->block_count; ++i) {
+        const SB3Block *b = &target->blocks[i];
+        if (b->block_id && strcmp(b->block_id, block_id) == 0) {
+            fprintf(stderr, "[find] looking for '%s', found block[%zu] kind=%d opcode=%s\n",
+                    block_id, i, b->kind, b->opcode ? b->opcode : "?");
+            return b;
+        }
     }
-
+    fprintf(stderr, "[find] looking for '%s', NOT FOUND\n", block_id);
     return NULL;
 }
 
@@ -1651,3 +1915,59 @@ const SB3Block *sb3_target_find_block_by_kind(const SB3Target *target, SB3BlockK
     return NULL;
 }
 
+
+SB3Variable *sb3_project_find_variable(SB3Project *project,
+                                        SB3Target *context,
+                                        const char *name)
+{
+    if (project == NULL || name == NULL)
+        return NULL;
+
+    if (context != NULL) {
+        for (size_t i = 0; i < context->variable_count; ++i) {
+            if (context->variables[i].name &&
+                strcmp(context->variables[i].name, name) == 0)
+                return &context->variables[i];
+        }
+    }
+
+    for (size_t i = 0; i < project->target_count; ++i) {
+        SB3Target *t = &project->targets[i];
+        if (!t->is_stage) continue;
+        for (size_t j = 0; j < t->variable_count; ++j) {
+            if (t->variables[j].name &&
+                strcmp(t->variables[j].name, name) == 0)
+                return &t->variables[j];
+        }
+    }
+
+    return NULL;
+}
+
+SB3List *sb3_project_find_list(SB3Project *project,
+                                SB3Target *context,
+                                const char *name)
+{
+    if (project == NULL || name == NULL)
+        return NULL;
+
+    if (context != NULL) {
+        for (size_t i = 0; i < context->list_count; ++i) {
+            if (context->lists[i].name &&
+                strcmp(context->lists[i].name, name) == 0)
+                return &context->lists[i];
+        }
+    }
+
+    for (size_t i = 0; i < project->target_count; ++i) {
+        SB3Target *t = &project->targets[i];
+        if (!t->is_stage) continue;
+        for (size_t j = 0; j < t->list_count; ++j) {
+            if (t->lists[j].name &&
+                strcmp(t->lists[j].name, name) == 0)
+                return &t->lists[j];
+        }
+    }
+
+    return NULL;
+}

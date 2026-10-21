@@ -64,33 +64,32 @@ int sb3_runtime_start(SB3Runtime *runtime)
     if (runtime->threads == NULL)
         return 0;
 
-    for (size_t i = 0;
-         i < runtime->project->target_count;
-         ++i) {
-        SB3Target *target = &runtime->project->targets[i];
+    for (size_t i = 0; i < runtime->project->target_count; ++i) {
+    SB3Target *target = &runtime->project->targets[i];
 
-        const SB3Block *hat = sb3_target_find_block_by_kind(
-            target,
-            SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED);
+    const SB3Block *hat = sb3_target_find_block_by_kind(
+        target,
+        SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED);
 
-        if (hat == NULL || hat->next == NULL)
-            continue;
+    if (hat == NULL || hat->next == NULL)
+        continue;
 
-        const SB3Block *first =
-            sb3_target_find_block(target, hat->next);
+    const SB3Block *first =
+        sb3_target_find_block(target, hat->next);
 
-        if (first == NULL)
-            continue;
+    if (first == NULL)
+        continue;
 
-        SB3Thread *thread =
-            &runtime->threads[runtime->thread_count++];
+    SB3Thread *thread =
+        &runtime->threads[runtime->thread_count++];
 
-        memset(thread, 0, sizeof(*thread));
+    memset(thread, 0, sizeof(*thread));
 
-        thread->target = target;
-        thread->current_block = first;
-        thread->running = 1;
-    }
+    thread->runtime       = runtime;   
+    thread->target        = target;
+    thread->current_block = first;
+    thread->running       = 1;
+}
 
     return runtime->thread_count > 0;
 }

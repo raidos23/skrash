@@ -48,6 +48,23 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_OPERATOR_CONTAINS,
     SB3_BLOCK_KIND_OPERATOR_LETTER_OF,
     SB3_BLOCK_KIND_OPERATOR_MATHOP,
+    SB3_BLOCK_KIND_DATA_SETVARIABLETO,
+    SB3_BLOCK_KIND_DATA_CHANGEVARIABLEBY,
+    SB3_BLOCK_KIND_DATA_SHOWVARIABLE,
+    SB3_BLOCK_KIND_DATA_HIDEVARIABLE,
+    SB3_BLOCK_KIND_DATA_VARIABLE,
+    SB3_BLOCK_KIND_DATA_ADDTOLIST,
+    SB3_BLOCK_KIND_DATA_DELETEOFLIST,
+    SB3_BLOCK_KIND_DATA_DELETEALLOFLIST,
+    SB3_BLOCK_KIND_DATA_INSERTATLIST,
+    SB3_BLOCK_KIND_DATA_REPLACEITEMOFLIST,
+    SB3_BLOCK_KIND_DATA_ITEMOFLIST,
+    SB3_BLOCK_KIND_DATA_ITEMNUMOFLIST,
+    SB3_BLOCK_KIND_DATA_LENGTHOFLIST,
+    SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM,
+    SB3_BLOCK_KIND_DATA_SHOWLIST,
+    SB3_BLOCK_KIND_DATA_HIDELIST,
+    SB3_BLOCK_KIND_DATA_LISTCONTENTS,
 } SB3BlockKind;
 
 typedef enum SB3InputKind {
@@ -109,7 +126,27 @@ typedef struct SB3Block {
     SB3Input input_num1;
     SB3Input input_num2;
     SB3Input input_condition;
+    char *variable_name;
+    char *variable_id;
+    char *list_name;
+    char *list_id;
 } SB3Block;
+
+typedef struct SB3Variable {
+    char *id;
+    char *name;
+    double value;
+    int is_cloud;
+} SB3Variable;
+
+typedef struct SB3List {
+    char *id;
+    char *name;
+    /* On stocke les valeurs comme des chaines
+    Chaque element peut etre un nombre ou un texte. */
+    char **items;
+    size_t item_count;
+} SB3List;
 
 typedef struct SB3Target {
     char *name;
@@ -123,6 +160,11 @@ typedef struct SB3Target {
 
     SB3Block *blocks;
     size_t block_count;
+    SB3Variable *variables;
+    size_t variable_count;
+    SB3List *lists;
+    size_t list_count;
+
 } SB3Target;
 
 /*
@@ -159,5 +201,8 @@ const SB3Block *sb3_target_find_block_by_kind(
     const SB3Target *target,
     SB3BlockKind kind
 );
+
+SB3Variable *sb3_project_find_variable(SB3Project *project, SB3Target *context, const char *name);
+SB3List *sb3_project_find_list(SB3Project *project, SB3Target *context, const char *name);
 
 #endif /* SKRASH_SB3_H */
