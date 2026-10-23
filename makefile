@@ -58,7 +58,7 @@ $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS)
 
 $(BUILD_DIR)/renderer/%.o: $(RENDER_DIR)/%.c $(HEADERS) $(RENDER_HEADERS)
 	@mkdir -p $(dir $@)
-	$(CC) $(CFLAGS) -I$(SRC_DIR) -I$(RENDER_DIR) -c $< -o $@
+	$(CC) $(CFLAGS) -Wno-sign-compare -I$(SRC_DIR) -I$(RENDER_DIR) -c $< -o $@
 
 # ---------------- C tests ----------------
 

@@ -7,6 +7,73 @@
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#define NANOSVG_IMPLEMENTATION
+#include "nanosvg.h"
+#define NANOSVGRAST_IMPLEMENTATION
+#include "nanosvgrast.h"
+
+
+// convertisseur SVG 
+static SB3Texture *load_texture_from_svg(SDL_Renderer *sdl,
+                                          const unsigned char *svg_data,
+                                          size_t svg_size,
+                                          float scale)
+{
+    /* nanosvg veut une string terminee par \0, on duplique */
+    char *copy = malloc(svg_size + 1);
+    if (copy == NULL) return NULL;
+    memcpy(copy, svg_data, svg_size);
+    copy[svg_size] = '\0';
+
+    NSVGimage *img = nsvgParse(copy, "px", 96.0f);
+    free(copy);
+    if (img == NULL) return NULL;
+
+    int w = (int)(img->width * scale);
+    int h = (int)(img->height * scale);
+    if (w <= 0 || h <= 0) { nsvgDelete(img); return NULL; }
+
+    NSVGrasterizer *rast = nsvgCreateRasterizer();
+    if (rast == NULL) { nsvgDelete(img); return NULL; }
+
+    unsigned char *pixels = malloc((size_t)w * h * 4);
+    if (pixels == NULL) {
+        nsvgDeleteRasterizer(rast);
+        nsvgDelete(img);
+        return NULL;
+    }
+
+    nsvgRasterize(rast, img, 0, 0, scale, pixels, w, h, w * 4);
+
+    nsvgDeleteRasterizer(rast);
+    nsvgDelete(img);
+
+    /* nanosvg produit du RGBA pre-multiplie, on convertit en non-premultiplie */
+    for (int i = 0; i < w * h; ++i) {
+        unsigned char a = pixels[i * 4 + 3];
+        if (a != 0 && a != 255) {
+            pixels[i*4+0] = (unsigned char)((pixels[i*4+0] * 255) / a);
+            pixels[i*4+1] = (unsigned char)((pixels[i*4+1] * 255) / a);
+            pixels[i*4+2] = (unsigned char)((pixels[i*4+2] * 255) / a);
+        }
+    }
+
+    SDL_Texture *tex = SDL_CreateTexture(sdl,
+        SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, w, h);
+    if (tex == NULL) { free(pixels); return NULL; }
+
+    SDL_UpdateTexture(tex, NULL, pixels, w * 4);
+    SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
+
+    free(pixels);
+
+    SB3Texture *t = malloc(sizeof(*t));
+    if (t == NULL) { SDL_DestroyTexture(tex); return NULL; }
+    t->tex = tex;
+    t->w = w;
+    t->h = h;
+    return t;
+}
 
 /* ------------------------------------------------------------------ */
 /* textures                                                            */
@@ -43,31 +110,36 @@ SB3Texture *sb3_renderer_get_texture(SB3Renderer *r,
 {
     if (r == NULL || project == NULL || asset_id == NULL) return NULL;
 
-    /* cherche dans le cache */
+    /* cache */
     for (size_t i = 0; i < r->cache_count; ++i) {
         if (strcmp(r->cache[i].asset_id, asset_id) == 0)
             return r->cache[i].tex;
     }
 
-    /* cherche l'asset dans le projet */
     const SB3Asset *asset = sb3_asset_find(project, asset_id);
     if (asset == NULL || asset->data == NULL || asset->data_size == 0)
         return NULL;
 
-    /* n'essaie de decoder que les formats supportes */
+    SB3Texture *tex = NULL;
+
     if (asset->data_format != NULL &&
-        strcmp(asset->data_format, "png") != 0 &&
-        strcmp(asset->data_format, "jpg") != 0 &&
-        strcmp(asset->data_format, "jpeg") != 0 &&
-        strcmp(asset->data_format, "bmp") != 0) {
-        return NULL;
+        strcmp(asset->data_format, "svg") == 0) {
+        tex = load_texture_from_svg(r->sdl,
+                                     (const unsigned char *)asset->data,
+                                     asset->data_size, 1.0f);
+    } else if (asset->data_format != NULL &&
+               (strcmp(asset->data_format, "png") == 0 ||
+                strcmp(asset->data_format, "jpg") == 0 ||
+                strcmp(asset->data_format, "jpeg") == 0 ||
+                strcmp(asset->data_format, "bmp") == 0)) {
+        tex = load_texture_from_memory(r->sdl,
+                                        (const unsigned char *)asset->data,
+                                        asset->data_size);
     }
 
-    SB3Texture *tex = load_texture_from_memory(r->sdl, asset->data,
-                                                asset->data_size);
     if (tex == NULL) return NULL;
 
-    /* ajoute au cache */
+    /* cache */
     if (r->cache_count == r->cache_cap) {
         size_t new_cap = r->cache_cap ? r->cache_cap * 2 : 16;
         void *new_cache = realloc(r->cache, new_cap * sizeof(*r->cache));
@@ -252,22 +324,44 @@ void sb3_renderer_draw_targets(SB3Renderer *r, SB3Project *project)
         if (t->is_stage) continue;
         if (!t->visible) continue;
 
-        Uint8 rr, gg, bb;
-        sprite_color(t->name, &rr, &gg, &bb);
-
-        /* Taille de base : 100x100 pixels (approximation costume standard).
-         * Sera remplace par tex->w / tex->h quand les costumes seront
-         * affiches. size = 100 -> taille native. */
-        float base_w = 100.0f;
-        float base_h = 100.0f;
-        float w = base_w * (float)t->size / 100.0f;
-        float h = base_h * (float)t->size / 100.0f;
-
         float cx, cy;
         scratch_to_screen((float)t->x, (float)t->y, &cx, &cy);
 
-        draw_rotated_rect(r, cx, cy, w, h,
-                          (float)t->direction, rr, gg, bb);
+        /* essaie d'afficher le costume courant */
+        SB3Texture *tex = NULL;
+        if (t->costume_count > 0 && t->current_costume < t->costume_count) {
+            SB3Costume *c = &t->costumes[t->current_costume];
+            tex = sb3_renderer_get_texture(r, project, c->asset_id);
+        }
+
+        if (tex != NULL) {
+            float scale = (float)t->size / 100.0f;
+            float w = (float)tex->w * scale;
+            float h = (float)tex->h * scale;
+
+            SDL_Rect dst = {
+                (int)(cx - w / 2),
+                (int)(cy - h / 2),
+                (int)w,
+                (int)h
+            };
+
+            /* Scratch : direction 0 = haut. SDL : 0 = droite.
+             * On compense : angle = direction - 90. */
+            double angle = (double)t->direction - 90.0;
+            SDL_Point center = { dst.w / 2, dst.h / 2 };
+
+            SDL_RenderCopyEx(r->sdl, tex->tex, NULL, &dst,
+                             angle, &center, SDL_FLIP_NONE);
+        } else {
+            // fallback : rectangle
+            Uint8 rr, gg, bb;
+            sprite_color(t->name, &rr, &gg, &bb);
+            float w = 100.0f * (float)t->size / 100.0f;
+            float h = w;
+            draw_rotated_rect(r, cx, cy, w, h,
+                              (float)t->direction, rr, gg, bb);
+        }
     }
 }
 

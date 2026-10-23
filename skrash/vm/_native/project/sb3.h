@@ -148,6 +148,13 @@ typedef struct SB3List {
     size_t item_count;
 } SB3List;
 
+typedef struct SB3Costume {
+    char *name;
+    char *asset_id;
+    char *md5ext;
+    char *data_format;
+} SB3Costume;
+
 typedef struct SB3Target {
     char *name;
     int is_stage;
@@ -164,6 +171,9 @@ typedef struct SB3Target {
     size_t variable_count;
     SB3List *lists;
     size_t list_count;
+    SB3Costume *costumes;
+    size_t costume_count;
+    size_t current_costume;
 
 } SB3Target;
 

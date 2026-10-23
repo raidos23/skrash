@@ -156,6 +156,9 @@ static void sb3_target_init(SB3Target *target)
     target->variable_count = 0;
     target->lists = NULL;
     target->list_count = 0;
+    target->costumes = NULL;
+    target->costume_count = 0;
+    target->current_costume = 0;
     
 }
 
@@ -688,6 +691,14 @@ static void sb3_target_clear(SB3Target *target)
 
     for (index = 0; index < target->block_count; ++index)
         sb3_block_free(&target->blocks[index]);
+
+    for (index = 0; index < target->costume_count; ++index) {
+    free(target->costumes[index].name);
+    free(target->costumes[index].asset_id);
+    free(target->costumes[index].md5ext);
+    free(target->costumes[index].data_format);
+    }
+    free(target->costumes);
 
     free(target->blocks);
     sb3_target_init(target);
@@ -1724,6 +1735,40 @@ static int sb3_parse_lists(const JsonValue *target_value, SB3Target *target)
     return 1;
 }
 
+static int sb3_parse_costumes(const JsonValue *target_value, SB3Target *target)
+{
+    const JsonValue *arr = json_object_get(target_value, "costumes");
+    if (arr == NULL || arr->type != JSON_ARRAY || arr->as.array.count == 0)
+        return 1;
+
+    target->costumes = sb3_calloc(arr->as.array.count,
+                                   sizeof(*target->costumes));
+    if (target->costumes == NULL) return 0;
+
+    for (size_t i = 0; i < arr->as.array.count; ++i) {
+        const JsonValue *c = arr->as.array.items[i];
+        if (c == NULL || c->type != JSON_OBJECT) continue;
+
+        SB3Costume *co = &target->costumes[target->costume_count];
+        co->name        = json_get_string_dup(c, "name");
+        co->asset_id    = json_get_string_dup(c, "assetId");
+        co->md5ext      = json_get_string_dup(c, "md5ext");
+        co->data_format = json_get_string_dup(c, "dataFormat");
+        if (co->asset_id == NULL) {
+            free(co->name); free(co->md5ext); free(co->data_format);
+            continue;
+        }
+        target->costume_count++;
+    }
+
+    target->current_costume =
+        (size_t)json_get_number(target_value, "currentCostume", 0);
+    if (target->current_costume >= target->costume_count)
+        target->current_costume = 0;
+
+    return 1;
+}
+
 static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
 {
     const JsonValue *blocks;
@@ -1742,6 +1787,8 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
     if (!sb3_parse_variables(target_value, target))
     return 0;
     if (!sb3_parse_lists(target_value, target))
+    return 0;
+    if (!sb3_parse_costumes(target_value, target)) 
     return 0;
 
     blocks = json_object_get(target_value, "blocks");
