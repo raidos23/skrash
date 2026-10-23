@@ -10,7 +10,7 @@
 
 ## Requirements
 
-- **Libraries**: `libzip`
+- **Libraries**: `libzip`, `SDL2` 
 
 ---
 
@@ -186,6 +186,19 @@ make clean
 
 ---
 
+### 2. Run a Scratch project
+
+skrash ships with a renderer. It loads a `.sb3` file, executes
+the scripts, and displays the stage.
+
+```bash
+# Build the player
+make play
+
+# Run a project
+./build/skrash-play path/to/project.sb3
+
+```
 ## License
 
 licensed under the MIT License
