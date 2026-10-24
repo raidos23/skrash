@@ -1000,6 +1000,7 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "sensing_mousedown")  == 0) return SB3_BLOCK_KIND_SENSING_MOUSEDOWN;
     if (strcmp(opcode, "sensing_mousex")     == 0) return SB3_BLOCK_KIND_SENSING_MOUSEX;
     if (strcmp(opcode, "sensing_mousey")     == 0) return SB3_BLOCK_KIND_SENSING_MOUSEY;
+    if (strcmp(opcode, "event_whenkeypressed") == 0) return SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1680,6 +1681,19 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
         const JsonValue *val = key->as.array.items[0];
         if (val && val->type == JSON_STRING)
             block->message = sb3_strdup_local(val->as.string);
+    }
+    break;
+}
+
+    case SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED: {
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *key = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
+    
+    if (key && key->type == JSON_ARRAY && key->as.array.count >= 1) {
+        const JsonValue *val = key->as.array.items[0];
+        if (val && val->type == JSON_STRING) {
+            block->message = sb3_strdup_local(val->as.string);
+        }
     }
     break;
 }

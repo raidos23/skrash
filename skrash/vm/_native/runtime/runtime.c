@@ -155,3 +155,35 @@ int sb3_runtime_is_key_pressed(SB3Runtime *runtime, const char *key_name) {
     int sc = scratch_key_to_sdl(key_name);
     return (sc >= 0) ? runtime->keys[sc] : 0;
 }
+
+void sb3_runtime_trigger_key_hats(SB3Runtime *runtime, int scancode) {
+    if (!runtime || !runtime->project) return;
+
+    for (size_t i = 0; i < runtime->project->target_count; ++i) {
+        SB3Target *target = &runtime->project->targets[i];
+        for (size_t j = 0; j < target->block_count; ++j) {
+            SB3Block *b = &target->blocks[j];
+            
+            if (b->kind == SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED && b->message) {
+                /* On verifie si la touche correspond */
+                /* Note : il faut que tu exposes ta fonction de conversion de touche */
+                int hat_sc = scratch_key_to_sdl(b->message); 
+                
+                if (hat_sc == scancode || strcmp(b->message, "any") == 0) {
+                    /* On cree un nouveau thread */
+                    SB3Thread *new_threads = realloc(runtime->threads, (runtime->thread_count + 1) * sizeof(SB3Thread));
+                    if (!new_threads) return;
+                    runtime->threads = new_threads;
+
+                    SB3Thread *th = &runtime->threads[runtime->thread_count++];
+                    memset(th, 0, sizeof(*th));
+                    th->runtime = runtime;
+                    th->target = target;
+                    /* On commence au bloc suivant le chapeau */
+                    th->current_block = sb3_target_find_block(target, b->next);
+                    th->running = (th->current_block != NULL);
+                }
+            }
+        }
+    }
+}

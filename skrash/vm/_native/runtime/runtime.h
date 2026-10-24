@@ -26,5 +26,6 @@ int sb3_runtime_step(SB3Runtime *runtime);
 void sb3_runtime_set_key(SB3Runtime *runtime, int scancode, int is_down);
 void sb3_runtime_set_mouse(SB3Runtime *runtime, int x, int y, int down);
 int sb3_runtime_is_key_pressed(SB3Runtime *runtime, const char *key_name);
+void sb3_runtime_trigger_key_hats(SB3Runtime *runtime, int scancode);
 
 #endif /* SKRASH_RUNTIME_H */

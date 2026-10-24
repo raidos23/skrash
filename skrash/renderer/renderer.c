@@ -242,10 +242,17 @@ int sb3_renderer_poll(SB3Renderer *r)
                 sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, 0);
             break;
         case SDL_KEYDOWN:
-            if (ev.key.keysym.sym == SDLK_ESCAPE) r->running = 0;
-            else if (r->runtime_ptr) 
-                sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 1);
-            break;
+        if (ev.key.keysym.sym == SDLK_ESCAPE) r->running = 0;
+        else if (r->runtime_ptr) {
+        /* Met a jour l'etat pour le bloc sensing */
+        sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 1);
+        
+        /* Si ce n'est pas une repetition, on lance les chapeaux */
+        if (ev.key.repeat == 0) {
+            sb3_runtime_trigger_key_hats((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode);
+            }
+        }
+        break;
         case SDL_KEYUP:
             if (r->runtime_ptr) 
                 sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 0);
