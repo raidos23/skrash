@@ -11,6 +11,7 @@
 #include "nanosvg.h"
 #define NANOSVGRAST_IMPLEMENTATION
 #include "nanosvgrast.h"
+#include "../vm/_native/runtime/runtime.h"
 
 
 // convertisseur SVG 
@@ -223,25 +224,34 @@ int sb3_renderer_poll(SB3Renderer *r)
         case SDL_QUIT:
             r->running = 0;
             break;
-        case SDL_KEYDOWN:
-            if (ev.key.keysym.sym == SDLK_ESCAPE) r->running = 0;
-            r->key_down[ev.key.keysym.scancode] = 1;
-            break;
-        case SDL_KEYUP:
-            r->key_down[ev.key.keysym.scancode] = 0;
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            r->mouse_down = 1;
-            break;
-        case SDL_MOUSEBUTTONUP:
-            r->mouse_down = 0;
-            break;
+    
         case SDL_MOUSEMOTION:
             r->mouse_x = ev.motion.x;
             r->mouse_y = ev.motion.y;
+            if (r->runtime_ptr) 
+                sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, r->mouse_down);
             break;
-        }
-    }
+        case SDL_MOUSEBUTTONDOWN:
+            r->mouse_down = 1;
+            if (r->runtime_ptr) 
+                sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, 1);
+            break;
+        case SDL_MOUSEBUTTONUP:
+            r->mouse_down = 0;
+            if (r->runtime_ptr) 
+                sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, 0);
+            break;
+        case SDL_KEYDOWN:
+            if (ev.key.keysym.sym == SDLK_ESCAPE) r->running = 0;
+            else if (r->runtime_ptr) 
+                sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 1);
+            break;
+        case SDL_KEYUP:
+            if (r->runtime_ptr) 
+                sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 0);
+            break;
+    } 
+}
     return r->running;
 }
 

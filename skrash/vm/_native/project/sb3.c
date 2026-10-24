@@ -995,6 +995,11 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "data_listcontents")       == 0) return SB3_BLOCK_KIND_DATA_LISTCONTENTS;
 
     if (strcmp(opcode, "looks_nextcostume")     == 0) return SB3_BLOCK_KIND_LOOKS_NEXTCOSTUME;
+    if (strcmp(opcode, "sensing_keypressed") == 0) return SB3_BLOCK_KIND_SENSING_KEYPRESSED;
+    if (strcmp(opcode, "sensing_keyoptions") == 0) return SB3_BLOCK_KIND_SENSING_KEYOPTIONS;
+    if (strcmp(opcode, "sensing_mousedown")  == 0) return SB3_BLOCK_KIND_SENSING_MOUSEDOWN;
+    if (strcmp(opcode, "sensing_mousex")     == 0) return SB3_BLOCK_KIND_SENSING_MOUSEX;
+    if (strcmp(opcode, "sensing_mousey")     == 0) return SB3_BLOCK_KIND_SENSING_MOUSEY;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1634,6 +1639,50 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     
     case SB3_BLOCK_KIND_LOOKS_NEXTCOSTUME:
     break; 
+
+    case SB3_BLOCK_KIND_SENSING_KEYPRESSED: {
+    /* 1. Chercher dans les fields (comme le fait Scratch) */
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *key_field = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
+    
+    if (key_field && key_field->type == JSON_ARRAY && key_field->as.array.count >= 1) {
+        const JsonValue *val = key_field->as.array.items[0];
+        if (val && val->type == JSON_STRING) {
+            block->message = sb3_strdup_local(val->as.string);
+            break;
+        }
+    }
+
+    /* 2. Si pas dans les fields, chercher dans les inputs (cas du shadow) */
+    const JsonValue *inputs = json_object_get(block_value, "inputs");
+    const JsonValue *key_in = inputs ? json_object_get(inputs, "KEY_OPTION") : NULL;
+    
+    if (key_in && key_in->type == JSON_ARRAY && key_in->as.array.count >= 2) {
+        const JsonValue *body = key_in->as.array.items[1];
+        
+        if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+            const JsonValue *inner = body->as.array.items[1];
+            if (inner && inner->type == JSON_STRING)
+                block->message = sb3_strdup_local(inner->as.string);
+        } else if (body && body->type == JSON_STRING) {
+            /* C'est l'ID du bloc sensing_keyoptions */
+            block->input_num1.kind = SB3_INPUT_KIND_BLOCK;
+            block->input_num1.block_id = sb3_strdup_local(body->as.string);
+        }
+    }
+    break;
+}
+
+    case SB3_BLOCK_KIND_SENSING_KEYOPTIONS: {
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *key = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
+    if (key && key->type == JSON_ARRAY && key->as.array.count >= 1) {
+        const JsonValue *val = key->as.array.items[0];
+        if (val && val->type == JSON_STRING)
+            block->message = sb3_strdup_local(val->as.string);
+    }
+    break;
+}
 
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:

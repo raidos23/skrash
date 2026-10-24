@@ -34,6 +34,7 @@ typedef struct SB3Renderer {
     int  mouse_down;
     int  mouse_x;
     int  mouse_y;
+    void *runtime_ptr;
 } SB3Renderer;
 
 int  sb3_renderer_init(SB3Renderer *r, int width, int height, const char *title);

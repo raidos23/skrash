@@ -139,6 +139,12 @@ int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
     case SB3_BLOCK_KIND_DATA_ITEMNUMOFLIST:
     case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM:     
     return sb3_data_evaluate(thread, block, out);
+
+    case SB3_BLOCK_KIND_SENSING_KEYPRESSED:
+    case SB3_BLOCK_KIND_SENSING_MOUSEDOWN:
+    case SB3_BLOCK_KIND_SENSING_MOUSEX:
+    case SB3_BLOCK_KIND_SENSING_MOUSEY:
+    return sb3_sensing_evaluate(thread, block, out);
     default:
         return 0;
     }

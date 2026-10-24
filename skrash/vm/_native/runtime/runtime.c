@@ -11,6 +11,12 @@ static void sb3_runtime_reset(SB3Runtime *runtime)
     runtime->project = NULL;
     runtime->threads = NULL;
     runtime->thread_count = 0;
+    
+    /* Initialisation du clavier et de la souris */
+    memset(runtime->keys, 0, sizeof(runtime->keys));
+    runtime->mouse_down = 0;
+    runtime->mouse_x = 240;  /* Centre de l'écran Scratch (480/2) */
+    runtime->mouse_y = 180;  /* Centre de l'écran Scratch (360/2) */
 }
 
 int sb3_runtime_init(SB3Runtime *runtime, SB3Project *project)
@@ -114,4 +120,38 @@ int sb3_runtime_step(SB3Runtime *runtime)
     }
 
     return any_running;
+}
+
+static int scratch_key_to_sdl(const char *name) {
+    if (!name) return -1;
+    if (strcmp(name, "space") == 0) return 44;
+    if (strcmp(name, "right arrow") == 0) return 79;
+    if (strcmp(name, "left arrow") == 0) return 80;
+    if (strcmp(name, "up arrow") == 0) return 82;
+    if (strcmp(name, "down arrow") == 0) return 81;
+    if (name[0] >= 'a' && name[0] <= 'z' && name[1] == '\0') return 4 + (name[0] - 'a');
+    return -1;
+}
+
+void sb3_runtime_set_key(SB3Runtime *runtime, int scancode, int is_down) {
+    if (runtime && scancode >= 0 && scancode < 512)
+        runtime->keys[scancode] = is_down;
+}
+
+void sb3_runtime_set_mouse(SB3Runtime *runtime, int x, int y, int down) {
+    if (runtime) {
+        runtime->mouse_x = x;
+        runtime->mouse_y = y;
+        runtime->mouse_down = down;
+    }
+}
+
+int sb3_runtime_is_key_pressed(SB3Runtime *runtime, const char *key_name) {
+    if (!runtime || !key_name) return 0;
+    if (strcmp(key_name, "any") == 0) {
+        for (int i = 0; i < 512; i++) if (runtime->keys[i]) return 1;
+        return 0;
+    }
+    int sc = scratch_key_to_sdl(key_name);
+    return (sc >= 0) ? runtime->keys[sc] : 0;
 }

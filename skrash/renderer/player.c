@@ -39,6 +39,7 @@ int main(int argc, char **argv)
     }
 
     int steps = 0;
+    renderer.runtime_ptr = &runtime;
     while (sb3_renderer_poll(&renderer)) {
         int active = sb3_runtime_step(&runtime);
         if (active) ++steps;
