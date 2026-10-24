@@ -1,7 +1,7 @@
 #include "blocks.h"
-
+#include <string.h>
 #include <stdio.h>
-
+#include <stdlib.h>
 int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
 {
     if (thread == NULL || thread->target == NULL || block == NULL)
@@ -50,6 +50,12 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
         return 1;
     }
 
+    case SB3_BLOCK_KIND_LOOKS_NEXTCOSTUME:
+    if (target->costume_count > 0) {
+        target->current_costume = (target->current_costume + 1) % target->costume_count;
+    }
+    return 1;
+    
     default:
         return 0;
     }

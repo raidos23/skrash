@@ -36,7 +36,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] think `message` for `n` seconds (`looks_thinkforsecs`)      
 - [x] think `message` (`looks_think`)      
 - [ ] switch costume to `costume` (`looks_switchcostumeto`)      
-- [ ] next costume (`looks_nextcostume`)      
+- [x] next costume (`looks_nextcostume`)      
 - [ ] switch backdrop to `backdrop` (`looks_switchbackdropto`)      
 - [ ] switch backdrop to `backdrop` and wait (`looks_switchbackdroptoandwait`)      
 - [ ] next backdrop (`looks_nextbackdrop`)      

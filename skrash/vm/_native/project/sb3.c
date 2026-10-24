@@ -994,6 +994,8 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "data_hidelist")           == 0) return SB3_BLOCK_KIND_DATA_HIDELIST;
     if (strcmp(opcode, "data_listcontents")       == 0) return SB3_BLOCK_KIND_DATA_LISTCONTENTS;
 
+    if (strcmp(opcode, "looks_nextcostume")     == 0) return SB3_BLOCK_KIND_LOOKS_NEXTCOSTUME;
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1629,6 +1631,9 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     sb3_parse_list_field(block_value, block);
     sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
     break;
+    
+    case SB3_BLOCK_KIND_LOOKS_NEXTCOSTUME:
+    break; 
 
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
