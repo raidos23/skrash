@@ -1,11 +1,11 @@
 # TODO / Roadmap      
-      
+
 Detailed progress of Scratch 3.0 block support in **skrash**.      
-      
+
 ---      
-      
+
 ## Motions      
-      
+
 - [x] move `n` steps (`motion_movesteps`)      
 - [x] turn `n` degrees (right) (`motion_turnright`)      
 - [x] turn `n` degrees (left) (`motion_turnleft`)      
@@ -21,16 +21,16 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] set `y` to `n` (`motion_sety`)      
 - [ ] if on edge bounce (`motion_ifonedgebounce`)      
 - [ ] set rotation style `(left-right, all around, don't rotate)` (`motion_setrotationstyle`)      
-      
+
 ### Motion reporters      
 - [x] `x position` (`motion_xposition`)      
 - [x] `y position` (`motion_yposition`)      
 - [x] `direction` (`motion_direction`)      
-      
+
 ---      
-      
+
 ## Looks      
-      
+
 - [ ] say `message` for `n` seconds (`looks_sayforsecs`)      
 - [x] say `message` (`looks_say`)      
 - [ ] think `message` for `n` seconds (`looks_thinkforsecs`)      
@@ -49,16 +49,16 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] hide (`looks_hide`)      
 - [ ] go to `(front, back)` layer (`looks_gotofrontback`)      
 - [ ] go `(forward, backward)` `n` layers (`looks_goforwardbackwardlayers`)      
-      
+
 ### Looks reporters      
 - [ ] `costume (number, name)` (`looks_costumenumbername`)      
 - [ ] `backdrop (number, name)` (`looks_backdropnumbername`)      
 - [ ] `size` (`looks_size`)      
-      
+
 ---      
-      
+
 ## Sounds      
-      
+
 - [ ] play sound `sound` until done (`sound_playuntildone`)      
 - [ ] start sound `sound` (`sound_play`)      
 - [ ] stop all sounds (`sound_stopallsounds`)      
@@ -67,16 +67,16 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] clear sound effects (`sound_cleareffects`)      
 - [ ] change volume by `n` (`sound_changevolumeby`)      
 - [ ] set volume to `n` % (`sound_setvolumeto`)      
-      
+
 ### Sounds reporters      
 - [ ] `volume` (`sound_volume`)      
-      
+
 ---      
-      
+
 ## Events      
-      
+
 - [x] when green flag clicked (`event_whenflagclicked`)      
-- [ ] when `key` key pressed (`event_whenkeypressed`)      
+- [x] when `key` key pressed (`event_whenkeypressed`)      
 - [ ] when this sprite clicked (`event_whenthisspriteclicked`)      
 - [ ] when stage clicked (`event_whenstageclicked`)      
 - [ ] when backdrop switches to `backdrop` (`event_whenbackdropswitchesto`)      
@@ -84,11 +84,11 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] when I receive `message` (`event_whenbroadcastreceived`)      
 - [ ] broadcast `message` (`event_broadcast`)      
 - [ ] broadcast `message` and wait (`event_broadcastandwait`)      
-      
+
 ---      
-      
+
 ## Control      
-      
+
 - [x] wait `n` seconds (`control_wait`)      
 - [x] repeat `n` (`control_repeat`)      
 - [x] forever (`control_forever`)      
@@ -100,36 +100,36 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] when I start as a clone (`control_start_as_clone`)      
 - [ ] create clone of `(myself, a sprite)` (`control_create_clone_of`)      
 - [ ] delete this clone (`control_delete_this_clone`)      
-      
+
 ---      
-      
+
 ## Sensing      
-      
+
 - [ ] ask `question` and wait (`sensing_askandwait`)      
 - [ ] set drag mode `(draggable, not draggable)` (`sensing_setdragmode`)      
 - [ ] reset timer (`sensing_resettimer`)      
-      
+
 ### Sensing reporters      
 - [ ] touching `(mouse-pointer, edge, a sprite)` ? (`sensing_touchingobject`)      
 - [ ] touching color `color` ? (`sensing_touchingcolor`)      
 - [ ] color `color` is touching `color` ? (`sensing_coloristouchingcolor`)      
 - [ ] distance to `(mouse-pointer, a sprite)` (`sensing_distanceto`)      
 - [ ] `answer` (`sensing_answer`)      
-- [ ] key `key` pressed? (`sensing_keypressed`)      
-- [ ] mouse down? (`sensing_mousedown`)      
-- [ ] `mouse x` (`sensing_mousex`)      
-- [ ] `mouse y` (`sensing_mousey`)      
+- [x] key `key` pressed? (`sensing_keypressed`)      
+- [x] mouse down? (`sensing_mousedown`)      
+- [x] `mouse x` (`sensing_mousex`)      
+- [x] `mouse y` (`sensing_mousey`)      
 - [ ] `loudness` (`sensing_loudness`)      
 - [ ] `timer` (`sensing_timer`)      
 - [ ] `(attribute)` of `(sprite, stage)` (`sensing_of`)      
 - [ ] `current (year, month, date, day of week, hour, minute, second)` (`sensing_current`)      
 - [ ] `days since 2000` (`sensing_dayssince2000`)      
 - [ ] `username` (`sensing_username`)      
-      
+
 ---      
-      
+
 ## Operators      
-      
+
 - [x] `num1` + `num2` (`operator_add`)      
 - [x] `num1` - `num2` (`operator_subtract`)      
 - [x] `num1` * `num2` (`operator_multiply`)      
@@ -148,18 +148,18 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] `num1` mod `num2` (`operator_mod`)      
 - [x] round `n` (`operator_round`)      
 - [x] `(abs, floor, ceiling, sqrt, sin, cos, tan, asin, acos, atan, ln, log, e ^, 10 ^)` of `n` (`operator_mathop`)      
-      
+
 ---      
-      
+
 ## Variables & Lists      
-      
+
 ### Variables      
 - [x] set `variable` to `value` (`data_setvariableto`)      
 - [x] change `variable` by `n` (`data_changevariableby`)      
 - [x] show variable `variable` (`data_showvariable`)      
 - [x] hide variable `variable` (`data_hidevariable`)      
 - [x] `variable` reporter (`data_variable`)      
-      
+
 ### Lists      
 - [x] add `item` to `list` (`data_addtolist`)      
 - [x] delete `n` of `list` (`data_deleteoflist`)      
@@ -173,25 +173,25 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] show list `list` (`data_showlist`)      
 - [x] hide list `list` (`data_hidelist`)      
 - [x] `list` reporter (`data_listcontents`)      
-      
+
 ---      
-      
+
 ## My Blocks      
-      
+
 - [ ] define `custom block` (`procedures_definition`)      
 - [ ] `custom block (arguments)` call (`procedures_call`)      
 - [ ] string / number argument reporter (`argument_reporter_string_number`)      
 - [ ] boolean argument reporter (`argument_reporter_boolean`)      
-      
+
 ---      
-      
+
 ## Renderer / Runtime (non-block)      
-      
+
 - [x] SDL2 window + basic stage rendering      
 - [x] SVG costume rendering (nanosvg)      
 - [ ] Bitmap costumes      
 - [ ] Graphic effects      
 - [ ] Layer ordering      
 - [ ] Sound engine      
-- [ ] Mouse / keyboard input events      
+- [x] Mouse / keyboard input events      
 - [ ] Clones      
