@@ -123,24 +123,22 @@ SB3Texture *sb3_renderer_get_texture(SB3Renderer *r,
 
     SB3Texture *tex = NULL;
 
-    if (asset->data_format != NULL &&
-        strcmp(asset->data_format, "svg") == 0) {
-        tex = load_texture_from_svg(r->sdl,
-                                     (const unsigned char *)asset->data,
-                                     asset->data_size, 1.0f);
-    } else if (asset->data_format != NULL &&
-               (strcmp(asset->data_format, "png") == 0 ||
-                strcmp(asset->data_format, "jpg") == 0 ||
-                strcmp(asset->data_format, "jpeg") == 0 ||
-                strcmp(asset->data_format, "bmp") == 0)) {
-        tex = load_texture_from_memory(r->sdl,
-                                        (const unsigned char *)asset->data,
-                                        asset->data_size);
+    /* SVG */
+    if (asset->data_format != NULL && strcmp(asset->data_format, "svg") == 0) {
+        tex = load_texture_from_svg(r->sdl, (const unsigned char*)asset->data, asset->data_size, 1.0f);
+    } 
+    /* BITMAP (png, jpg, jpeg, bmp) */
+    else if (asset->data_format != NULL && 
+             (strcmp(asset->data_format, "png") == 0 ||
+              strcmp(asset->data_format, "jpg") == 0 ||
+              strcmp(asset->data_format, "jpeg") == 0 ||
+              strcmp(asset->data_format, "bmp") == 0)) {
+        tex = load_texture_from_memory(r->sdl, (const unsigned char*)asset->data, asset->data_size);
     }
 
     if (tex == NULL) return NULL;
 
-    /* cache */
+    /* Mise en cache */
     if (r->cache_count == r->cache_cap) {
         size_t new_cap = r->cache_cap ? r->cache_cap * 2 : 16;
         void *new_cache = realloc(r->cache, new_cap * sizeof(*r->cache));
@@ -310,9 +308,35 @@ void sb3_renderer_clear(SB3Renderer *r, Uint8 rr, Uint8 gg, Uint8 bb)
 
 void sb3_renderer_draw_stage(SB3Renderer *r, SB3Project *project)
 {
-    (void)r; (void)project;
-    /* Stage backdrop : a implementer dans une session ulterieure.
-     * Necessite le parsing des costumes (SB3Costume). */
+    if (r == NULL || r->sdl == NULL || project == NULL) return;
+
+    /* 1. Trouver le Stage */
+    SB3Target *stage = NULL;
+    for (size_t i = 0; i < project->target_count; ++i) {
+        if (project->targets[i].is_stage) {
+            stage = &project->targets[i];
+            break;
+        }
+    }
+    if (stage == NULL) return;
+
+    /* 2. Trouver le costume actuel */
+    SB3Texture *tex = NULL;
+    if (stage->costume_count > 0 && stage->current_costume < stage->costume_count) {
+        SB3Costume *c = &stage->costumes[stage->current_costume];
+        tex = sb3_renderer_get_texture(r, project, c->asset_id);
+    }
+
+    /* 3. Dessiner l'image en plein écran, ou un fond blanc par défaut */
+    if (tex != NULL) {
+        SDL_Rect dst = { 0, 0, r->width, r->height };
+        /* On étire l'image pour qu'elle remplisse l'écran 480x360 */
+        SDL_RenderCopy(r->sdl, tex->tex, NULL, &dst);
+    } else {
+        /* Fallback si pas de costume sur le stage */
+        SDL_SetRenderDrawColor(r->sdl, 255, 255, 255, 255);
+        SDL_RenderClear(r->sdl);
+    }
 }
 
 /* Couleur deterministe par nom de sprite. */
