@@ -182,7 +182,14 @@ int sb3_block_execute(SB3Thread *thread, const SB3Block *block)
         return sb3_control_execute(thread, block);
 
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
-        return sb3_events_execute(thread, block);
+    case SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED:
+    case SB3_BLOCK_KIND_EVENT_BROADCAST:
+    case SB3_BLOCK_KIND_EVENT_BROADCASTANDWAIT:
+    case SB3_BLOCK_KIND_EVENT_WHENBROADCASTRECEIVED:
+    case SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED:
+    case SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED:
+    case SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN:
+    return sb3_events_execute(thread, block);
 
     case SB3_BLOCK_KIND_DATA_SETVARIABLETO:
     case SB3_BLOCK_KIND_DATA_CHANGEVARIABLEBY:

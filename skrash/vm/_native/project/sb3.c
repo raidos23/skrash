@@ -122,6 +122,8 @@ static void sb3_block_init(SB3Block *block)
     block->variable_id = NULL;
     block->list_name = NULL;
     block->list_id = NULL;
+    block->broadcast_name = NULL;
+    block->event_option = NULL;
     sb3_input_init(&block->input_steps);
     sb3_input_init(&block->input_degrees);
     sb3_input_init(&block->input_times);
@@ -159,7 +161,6 @@ static void sb3_target_init(SB3Target *target)
     target->costumes = NULL;
     target->costume_count = 0;
     target->current_costume = 0;
-    
 }
 
 static void sb3_project_init(SB3Project *project)
@@ -580,6 +581,15 @@ static const JsonValue *json_object_get(const JsonValue *object, const char *key
     return NULL;
 }
 
+static char *sb3_read_field_array0(const JsonValue *block_value, const char *name)
+{
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *f = fields ? json_object_get(fields, name) : NULL;
+    if (!f || f->type != JSON_ARRAY || f->as.array.count < 1) return NULL;
+    const JsonValue *val = f->as.array.items[0];
+    if (val && val->type == JSON_STRING) return sb3_strdup_local(val->as.string);
+    return NULL;
+}
 
 static char *sb3_read_field_string(const JsonValue *block_value, const char *name)
 {
@@ -650,6 +660,8 @@ static void sb3_block_free(SB3Block *block)
     free(block->variable_id);
     free(block->list_name);
     free(block->list_id);
+    free(block->broadcast_name);
+    free(block->event_option);
     sb3_input_free(&block->input_steps);
     sb3_input_free(&block->input_degrees);
     sb3_input_free(&block->input_times);
@@ -1001,7 +1013,13 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "sensing_mousex")     == 0) return SB3_BLOCK_KIND_SENSING_MOUSEX;
     if (strcmp(opcode, "sensing_mousey")     == 0) return SB3_BLOCK_KIND_SENSING_MOUSEY;
     if (strcmp(opcode, "event_whenkeypressed") == 0) return SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED;
-
+    if (strcmp(opcode, "event_broadcast") == 0) return SB3_BLOCK_KIND_EVENT_BROADCAST;
+    if (strcmp(opcode, "event_whenbroadcastreceived") == 0) return SB3_BLOCK_KIND_EVENT_WHENBROADCASTRECEIVED;
+    if (strcmp(opcode, "event_broadcastandwait")       == 0) return SB3_BLOCK_KIND_EVENT_BROADCASTANDWAIT;
+    if (strcmp(opcode, "event_whenbroadcastreceived")  == 0) return SB3_BLOCK_KIND_EVENT_WHENBROADCASTRECEIVED;
+    if (strcmp(opcode, "event_whenthisspriteclicked")  == 0) return SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED;
+    if (strcmp(opcode, "event_whenstageclicked")       == 0) return SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED;
+    if (strcmp(opcode, "event_whengreaterthan")        == 0) return SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN;
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1685,19 +1703,45 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     break;
 }
 
-    case SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED: {
-    const JsonValue *fields = json_object_get(block_value, "fields");
-    const JsonValue *key = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
+    case SB3_BLOCK_KIND_EVENT_BROADCAST:
+    case SB3_BLOCK_KIND_EVENT_BROADCASTANDWAIT: {
+    /* 1. Essayer de lire dans les fields (comme pour le chapeau) */
+    block->broadcast_name = sb3_read_field_array0(block_value, "BROADCAST_OPTION");
     
-    if (key && key->type == JSON_ARRAY && key->as.array.count >= 1) {
-        const JsonValue *val = key->as.array.items[0];
-        if (val && val->type == JSON_STRING) {
-            block->message = sb3_strdup_local(val->as.string);
+    /* 2. Si pas dans les fields, chercher dans les inputs (cas du bloc broadcast) */
+    if (block->broadcast_name == NULL) {
+        const JsonValue *inputs = json_object_get(block_value, "inputs");
+        const JsonValue *b_in = inputs ? json_object_get(inputs, "BROADCAST_INPUT") : NULL;
+        
+        if (b_in && b_in->type == JSON_ARRAY && b_in->as.array.count >= 2) {
+            const JsonValue *body = b_in->as.array.items[1];
+            
+            /* Le body est un tableau : [11, "dfghjkl", "ID"] */
+            if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+                const JsonValue *name_j = body->as.array.items[1];
+                if (name_j && name_j->type == JSON_STRING) {
+                    block->broadcast_name = sb3_strdup_local(name_j->as.string);
+                }
+            }
         }
     }
     break;
 }
 
+    case SB3_BLOCK_KIND_EVENT_WHENBROADCASTRECEIVED:
+    block->broadcast_name = sb3_read_field_array0(block_value, "BROADCAST_OPTION");
+    break;
+    
+    case SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED:
+    block->event_option = sb3_read_field_array0(block_value, "KEY_OPTION");
+    break;
+    case SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN:
+    block->event_option = sb3_read_field_array0(block_value, "WHENGREATERTHANMENU");
+    sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
+    break;
+    case SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED:
+    case SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED:
+    break;
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:

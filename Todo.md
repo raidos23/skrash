@@ -77,14 +77,13 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 
 - [x] when green flag clicked (`event_whenflagclicked`)      
 - [x] when `key` key pressed (`event_whenkeypressed`)      
-- [ ] when this sprite clicked (`event_whenthisspriteclicked`)      
-- [ ] when stage clicked (`event_whenstageclicked`)      
+- [x] when this sprite clicked (`event_whenthisspriteclicked`)      
+- [x] when stage clicked (`event_whenstageclicked`)      
 - [ ] when backdrop switches to `backdrop` (`event_whenbackdropswitchesto`)      
-- [ ] when `(loudness, timer)` > `n` (`event_whengreaterthan`)      
-- [ ] when I receive `message` (`event_whenbroadcastreceived`)      
-- [ ] broadcast `message` (`event_broadcast`)      
-- [ ] broadcast `message` and wait (`event_broadcastandwait`)      
-
+- [x] when `(loudness, timer)` > `n` (`event_whengreaterthan`)      
+- [x] when I receive `message` (`event_whenbroadcastreceived`)      
+- [x] broadcast `message` (`event_broadcast`)      
+- [x] broadcast `message` and wait (`event_broadcastandwait`)      
 ---      
 
 ## Control      

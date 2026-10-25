@@ -25,6 +25,9 @@ typedef struct SB3Thread {
     int running;
     int is_waiting;
     double wait_until;
+    int waiting_for_broadcast;
+    int broadcast_threads_started;
+    size_t broadcast_start_count; // Pour savoir combien de threads ont ete crees
 } SB3Thread;
 
 int sb3_thread_step(SB3Thread *thread);

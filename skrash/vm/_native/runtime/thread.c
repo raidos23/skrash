@@ -3,6 +3,9 @@
 #include <stddef.h>
 #include <time.h>
 #include "time_util.h"
+#include <stdio.h>
+#include "../project/sb3.h"
+#include "runtime.h"
 
 static void sb3_thread_finish_body(SB3Thread *thread, const SB3Block *next)
 {
@@ -93,11 +96,34 @@ static int sb3_thread_enter_repeat(SB3Thread *thread,
 }
 int sb3_thread_step(SB3Thread *thread)
 {
+    
+
     if (thread == NULL ||
         !thread->running ||
         thread->target == NULL ||
         thread->current_block == NULL)
         return 0;
+
+    if (thread->waiting_for_broadcast) {
+        int all_done = 1;
+        for (size_t i = thread->broadcast_start_count; i < thread->runtime->thread_count; ++i) {
+        if (thread->runtime->threads[i].running) {
+            all_done = 0;
+            break;
+        }
+    }
+        if (all_done) {
+        thread->waiting_for_broadcast = 0;
+        // On avance au bloc suivant
+        if (thread->current_block->next) {
+            thread->current_block = sb3_target_find_block(thread->target, thread->current_block->next);
+        } else {
+            sb3_thread_finish_body(thread, NULL);
+        }
+    }
+
+    return 1;
+      }
 
     if (thread->is_waiting) {
         if (sb3_now_seconds() < thread->wait_until)
@@ -121,7 +147,7 @@ int sb3_thread_step(SB3Thread *thread)
     }
 
     const SB3Block *block = thread->current_block;
-
+    
     if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT ||
         block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER) {
         if (!sb3_thread_enter_repeat(thread, block)) {
@@ -197,6 +223,8 @@ int sb3_thread_step(SB3Thread *thread)
     } else {
         sb3_thread_finish_body(thread, NULL);
     }
+
+    
 
     return thread->running;
 }

@@ -72,6 +72,12 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_SENSING_MOUSEDOWN,
     SB3_BLOCK_KIND_SENSING_MOUSEX,
     SB3_BLOCK_KIND_SENSING_MOUSEY,
+    SB3_BLOCK_KIND_EVENT_BROADCAST,
+    SB3_BLOCK_KIND_EVENT_BROADCASTANDWAIT,
+    SB3_BLOCK_KIND_EVENT_WHENBROADCASTRECEIVED,
+    SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED,
+    SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED,
+    SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN,
 } SB3BlockKind;
 
 typedef enum SB3InputKind {
@@ -137,6 +143,8 @@ typedef struct SB3Block {
     char *variable_id;
     char *list_name;
     char *list_id;
+    char *broadcast_name;
+    char *event_option;  /* pour KEY_OPTION, BROADCAST_OPTION, WHENGREATERTHANMENU */
 } SB3Block;
 
 typedef struct SB3Variable {

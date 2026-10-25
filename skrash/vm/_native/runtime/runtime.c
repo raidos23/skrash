@@ -1,7 +1,9 @@
 #include "runtime.h"
-
+#include "time_util.h"
 #include <stdlib.h>
 #include <string.h>
+
+static void spawn_hat_thread(SB3Runtime *runtime, SB3Target *target, const SB3Block *hat);
 
 static void sb3_runtime_reset(SB3Runtime *runtime)
 {
@@ -17,6 +19,7 @@ static void sb3_runtime_reset(SB3Runtime *runtime)
     runtime->mouse_down = 0;
     runtime->mouse_x = 240;  /* Centre de l'écran Scratch (480/2) */
     runtime->mouse_y = 180;  /* Centre de l'écran Scratch (360/2) */
+    runtime->timer_start = 0;
 }
 
 int sb3_runtime_init(SB3Runtime *runtime, SB3Project *project)
@@ -26,6 +29,8 @@ int sb3_runtime_init(SB3Runtime *runtime, SB3Project *project)
 
     sb3_runtime_reset(runtime);
     runtime->project = project;
+    runtime->timer_start = sb3_now_seconds();
+
 
     return 1;
 }
@@ -100,25 +105,40 @@ int sb3_runtime_start(SB3Runtime *runtime)
     return runtime->thread_count > 0;
 }
 
-int sb3_runtime_step(SB3Runtime *runtime)
-{
-    if (runtime == NULL || runtime->threads == NULL)
-        return 0;
+int sb3_runtime_step(SB3Runtime *runtime) {
+    if (runtime == NULL || runtime->threads == NULL) return 0;
 
-    int any_running = 0;
-
-    for (size_t i = 0; i < runtime->thread_count; ++i) {
-        SB3Thread *thread = &runtime->threads[i];
-
-        if (!thread->running)
-            continue;
-
-        sb3_thread_step(thread);
-
-        if (thread->running)
-            any_running = 1;
+    /* 1. Verification du chrono */
+    double elapsed = sb3_now_seconds() - runtime->timer_start;
+    for (size_t i = 0; i < runtime->project->target_count; ++i) {
+        SB3Target *target = &runtime->project->targets[i];
+        for (size_t j = 0; j < target->block_count; ++j) {
+            SB3Block *b = &target->blocks[j];
+            if (b->kind == SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN) {
+                double val = b->input_num1.literal_number;
+                if (elapsed > val) {
+                    spawn_hat_thread(runtime, target, b);
+                }
+            }
+        }
     }
 
+    /* 2. Avancement normal des threads (on fige la taille au debut) */
+    int any_running = 0;
+    size_t count_at_start = runtime->thread_count; 
+    
+    for (size_t i = 0; i < count_at_start; ++i) {
+        SB3Thread *th = &runtime->threads[i];
+        if (!th->running) continue;
+        sb3_thread_step(th);
+        if (th->running) any_running = 1;
+    }
+    
+    /* Si de nouveaux threads ont ete crees pendant l'execution, on continue */
+    if (runtime->thread_count > count_at_start) {
+        any_running = 1;
+    }
+    
     return any_running;
 }
 
@@ -156,6 +176,21 @@ int sb3_runtime_is_key_pressed(SB3Runtime *runtime, const char *key_name) {
     return (sc >= 0) ? runtime->keys[sc] : 0;
 }
 
+/* Fonction utilitaire interne pour créer un thread à partir d'un chapeau */
+static void spawn_hat_thread(SB3Runtime *runtime, SB3Target *target, const SB3Block *hat) {
+    if (!hat->next) return;
+    SB3Thread *new_threads = realloc(runtime->threads, (runtime->thread_count + 1) * sizeof(SB3Thread));
+    if (!new_threads) return;
+    runtime->threads = new_threads;
+    
+    SB3Thread *th = &runtime->threads[runtime->thread_count++];
+    memset(th, 0, sizeof(*th));
+    th->runtime = runtime;
+    th->target = target;
+    th->current_block = sb3_target_find_block(target, hat->next);
+    th->running = (th->current_block != NULL);
+}
+
 void sb3_runtime_trigger_key_hats(SB3Runtime *runtime, int scancode) {
     if (!runtime || !runtime->project) return;
 
@@ -164,26 +199,56 @@ void sb3_runtime_trigger_key_hats(SB3Runtime *runtime, int scancode) {
         for (size_t j = 0; j < target->block_count; ++j) {
             SB3Block *b = &target->blocks[j];
             
-            if (b->kind == SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED && b->message) {
-                /* On verifie si la touche correspond */
-                /* Note : il faut que tu exposes ta fonction de conversion de touche */
-                int hat_sc = scratch_key_to_sdl(b->message); 
-                
-                if (hat_sc == scancode || strcmp(b->message, "any") == 0) {
-                    /* On cree un nouveau thread */
-                    SB3Thread *new_threads = realloc(runtime->threads, (runtime->thread_count + 1) * sizeof(SB3Thread));
-                    if (!new_threads) return;
-                    runtime->threads = new_threads;
-
-                    SB3Thread *th = &runtime->threads[runtime->thread_count++];
-                    memset(th, 0, sizeof(*th));
-                    th->runtime = runtime;
-                    th->target = target;
-                    /* On commence au bloc suivant le chapeau */
-                    th->current_block = sb3_target_find_block(target, b->next);
-                    th->running = (th->current_block != NULL);
+            if (b->kind == SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED && b->event_option) {
+                int hat_sc = scratch_key_to_sdl(b->event_option);
+                if (hat_sc == scancode || strcmp(b->event_option, "any") == 0) {
+                    spawn_hat_thread(runtime, target, b);
                 }
             }
         }
     }
+}
+
+void sb3_runtime_broadcast(SB3Runtime *runtime, const char *message) {
+    if (!runtime || !runtime->project || !message) return;
+    
+    for (size_t i = 0; i < runtime->project->target_count; ++i) {
+        SB3Target *target = &runtime->project->targets[i];
+        for (size_t j = 0; j < target->block_count; ++j) {
+            SB3Block *b = &target->blocks[j];
+            if (b->kind == SB3_BLOCK_KIND_EVENT_WHENBROADCASTRECEIVED && b->broadcast_name) {
+                if (strcmp(b->broadcast_name, message) == 0) {
+                    spawn_hat_thread(runtime, target, b);
+                }
+            }
+        }
+    }
+}
+
+void sb3_runtime_trigger_clicks(SB3Runtime *runtime, int x, int y, SB3Target *clicked_target) {
+    (void)x; (void)y;
+    if (!runtime || !clicked_target) return;
+    
+    for (size_t j = 0; j < clicked_target->block_count; ++j) {
+        SB3Block *b = &clicked_target->blocks[j];
+        
+        /* Si c'est le Stage, on cherche when_stage_clicked */
+        if (clicked_target->is_stage && b->kind == SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED) {
+            spawn_hat_thread(runtime, clicked_target, b);
+        }
+        /* Si c'est un sprite, on cherche when_this_sprite_clicked */
+        else if (!clicked_target->is_stage && b->kind == SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED) {
+            spawn_hat_thread(runtime, clicked_target, b);
+        }
+    }
+}
+
+void sb3_runtime_broadcast_and_wait(SB3Runtime *runtime, SB3Thread *calling_thread, const char *message) {
+    // 1. On lance les threads
+    size_t start_count = runtime->thread_count;
+    sb3_runtime_broadcast(runtime, message);
+    
+    // 2. On dit au thread appelant d'attendre
+    calling_thread->waiting_for_broadcast = 1;
+    calling_thread->broadcast_start_count = start_count;
 }

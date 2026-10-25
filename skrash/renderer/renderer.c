@@ -224,39 +224,75 @@ int sb3_renderer_poll(SB3Renderer *r)
         case SDL_QUIT:
             r->running = 0;
             break;
-    
-        case SDL_MOUSEMOTION:
-            r->mouse_x = ev.motion.x;
-            r->mouse_y = ev.motion.y;
-            if (r->runtime_ptr) 
-                sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, r->mouse_down);
-            break;
-        case SDL_MOUSEBUTTONDOWN:
-            r->mouse_down = 1;
-            if (r->runtime_ptr) 
-                sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, 1);
-            break;
-        case SDL_MOUSEBUTTONUP:
-            r->mouse_down = 0;
-            if (r->runtime_ptr) 
-                sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, 0);
-            break;
+
         case SDL_KEYDOWN:
-        if (ev.key.keysym.sym == SDLK_ESCAPE) r->running = 0;
-        else if (r->runtime_ptr) {
-        /* Met a jour l'etat pour le bloc sensing */
-        sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 1);
-        
-        /* Si ce n'est pas une repetition, on lance les chapeaux */
+        if (ev.key.keysym.sym == SDLK_ESCAPE) {
+        r->running = 0;
+        } else if (r->runtime_ptr) {
+        SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
+        sb3_runtime_set_key(rt, ev.key.keysym.scancode, 1);
         if (ev.key.repeat == 0) {
-            sb3_runtime_trigger_key_hats((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode);
-            }
+            sb3_runtime_trigger_key_hats(rt, ev.key.keysym.scancode);
+        }
         }
         break;
         case SDL_KEYUP:
-            if (r->runtime_ptr) 
-                sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 0);
-            break;
+        if (r->runtime_ptr) {
+        sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 0);
+        }
+        break;
+        case SDL_MOUSEBUTTONDOWN: {
+            if (r->mouse_down) break; /* Si deja enfonce, on ignore (pas de spam) */
+            r->mouse_down = 1;
+    
+        if (r->runtime_ptr) {
+        SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
+        sb3_runtime_set_mouse(rt, r->mouse_x, r->mouse_y, 1);
+        
+        /* Calcul des coordonnees Scratch (0,0 au centre) */
+        float sx = (float)r->mouse_x - (SB3_STAGE_WIDTH / 2.0f);
+        float sy = (SB3_STAGE_HEIGHT / 2.0f) - (float)r->mouse_y;
+        int clicked = 0;
+
+        /* 1. On cherche d'abord si on a clique sur un SPRITE */
+        for (size_t i = 0; i < rt->project->target_count; i++) {
+            SB3Target *t = &rt->project->targets[i];
+            if (t->is_stage || !t->visible) continue;
+            
+            /* Approximation de la taille du sprite (100px) */
+            double w = 100.0; 
+            if (sx >= t->x - w/2 && sx <= t->x + w/2 && sy >= t->y - w/2 && sy <= t->y + w/2) {
+                sb3_runtime_trigger_clicks(rt, (int)sx, (int)sy, t);
+                clicked = 1;
+                break; 
+            }
+        }
+        
+        /* 2. Si on n'a touche AUCUN sprite, on declenche le Stage */
+        if (!clicked) {
+            for (size_t i = 0; i < rt->project->target_count; i++) {
+                if (rt->project->targets[i].is_stage) {
+                    sb3_runtime_trigger_clicks(rt, (int)sx, (int)sy, &rt->project->targets[i]);
+                    break;
+                }
+            }
+        }
+    }
+        break;
+    }
+       
+        case SDL_MOUSEBUTTONUP:
+        r->mouse_down = 0;
+        if (r->runtime_ptr) 
+        sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, 0);
+        break;
+        case SDL_MOUSEMOTION:
+        r->mouse_x = ev.motion.x;
+        r->mouse_y = ev.motion.y;
+        if (r->runtime_ptr) 
+        sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, r->mouse_down);
+        break;
+    
     } 
 }
     return r->running;
