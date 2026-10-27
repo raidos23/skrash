@@ -1020,6 +1020,8 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "event_whenthisspriteclicked")  == 0) return SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED;
     if (strcmp(opcode, "event_whenstageclicked")       == 0) return SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED;
     if (strcmp(opcode, "event_whengreaterthan")        == 0) return SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN;
+    if (strcmp(opcode, "sensing_touchingobject") == 0) return SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT;
+    if (strcmp(opcode, "sensing_touchingobjectmenu") == 0) return SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECTMENU;
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1742,6 +1744,36 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     case SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED:
     case SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED:
     break;
+
+    case SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT: {
+    const JsonValue *inputs = json_object_get(block_value, "inputs");
+    const JsonValue *t_in = inputs ? json_object_get(inputs, "TOUCHINGOBJECTMENU") : NULL;
+    
+    if (t_in && t_in->type == JSON_ARRAY && t_in->as.array.count >= 2) {
+        const JsonValue *body = t_in->as.array.items[1];
+        if (body && body->type == JSON_STRING) {
+            /* ID de shadow, à résoudre plus tard */
+            block->event_option = sb3_strdup_local(body->as.string);
+        } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+            const JsonValue *inner = body->as.array.items[1];
+            if (inner && inner->type == JSON_STRING) {
+                block->message = sb3_strdup_local(inner->as.string);
+            }
+        }
+    }
+    break;
+    }
+    case SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECTMENU: {
+    const JsonValue *fields = json_object_get(block_value, "fields");
+    const JsonValue *f = fields ? json_object_get(fields, "TOUCHINGOBJECTMENU") : NULL;
+    if (f && f->type == JSON_ARRAY && f->as.array.count >= 1) {
+        const JsonValue *val = f->as.array.items[0];
+        if (val && val->type == JSON_STRING) {
+            block->message = sb3_strdup_local(val->as.string);
+        }
+    }
+    break;
+    }
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:
@@ -1866,6 +1898,8 @@ static int sb3_parse_costumes(const JsonValue *target_value, SB3Target *target)
         co->asset_id    = json_get_string_dup(c, "assetId");
         co->md5ext      = json_get_string_dup(c, "md5ext");
         co->data_format = json_get_string_dup(c, "dataFormat");
+        co->width = 0;
+        co->height = 0;
         if (co->asset_id == NULL) {
             free(co->name); free(co->md5ext); free(co->data_format);
             continue;
@@ -1929,7 +1963,26 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
         }
 
         target->blocks = items;
-    }
+
+        /* Resolution des shadows (menus deroulants) */
+        for (index = 0; index < target->block_count; ++index) {
+            SB3Block *b = &target->blocks[index];
+            
+            if (b->kind == SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT && 
+                b->message == NULL && b->event_option != NULL) {
+                    for (size_t k = 0; k < target->block_count; ++k) {
+                        SB3Block *opt = &target->blocks[k];
+                        if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
+                            if (opt->message) {
+                                b->message = sb3_strdup_local(opt->message);
+                            }
+                            break;
+                        }
+                    }
+                }  
+            }
+        }
+
 
     return 1;
 }

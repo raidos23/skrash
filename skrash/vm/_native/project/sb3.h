@@ -78,6 +78,8 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED,
     SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED,
     SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN,
+    SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT,
+    SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECTMENU,
 } SB3BlockKind;
 
 typedef enum SB3InputKind {
@@ -168,6 +170,8 @@ typedef struct SB3Costume {
     char *asset_id;
     char *md5ext;
     char *data_format;
+    int width; 
+    int height;  
 } SB3Costume;
 
 typedef struct SB3Target {

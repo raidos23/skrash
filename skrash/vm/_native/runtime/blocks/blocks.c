@@ -144,6 +144,7 @@ int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
     case SB3_BLOCK_KIND_SENSING_MOUSEDOWN:
     case SB3_BLOCK_KIND_SENSING_MOUSEX:
     case SB3_BLOCK_KIND_SENSING_MOUSEY:
+    case SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT:
     return sb3_sensing_evaluate(thread, block, out);
     default:
         return 0;

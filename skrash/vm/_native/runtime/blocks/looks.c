@@ -10,21 +10,20 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
     SB3Target *target = thread->target;
 
     switch (block->kind) {
-    case SB3_BLOCK_KIND_LOOKS_SAY:
-    case SB3_BLOCK_KIND_LOOKS_THINK: {
-    const char *prefix = (block->kind == SB3_BLOCK_KIND_LOOKS_SAY)
-                         ? "(say)" : "(think)";
-
+    case SB3_BLOCK_KIND_LOOKS_SAY: {
     char buf[512];
-    if (!sb3_input_evaluate_string(thread, &block->input_message,
-                                   buf, sizeof(buf))) {
-        printf("%s \n", prefix);
-        return 1;
-    }
-
-    printf("%s %s\n", prefix, buf);
+    if (!sb3_input_evaluate_string(thread, &block->input_message, buf, sizeof(buf)))
+        return 0;
+    printf("[%s] (say) %s\n", thread->target->name ? thread->target->name : "?", buf);
     return 1;
-}
+    }
+    case SB3_BLOCK_KIND_LOOKS_THINK: {
+    char buf[512];
+    if (!sb3_input_evaluate_string(thread, &block->input_message, buf, sizeof(buf)))
+        return 0;
+    printf("[%s] (think) %s\n", thread->target->name ? thread->target->name : "?", buf);
+    return 1;
+    }
 
     case SB3_BLOCK_KIND_LOOKS_SHOW:
         target->visible = 1;

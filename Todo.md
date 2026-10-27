@@ -109,7 +109,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] reset timer (`sensing_resettimer`)      
 
 ### Sensing reporters      
-- [ ] touching `(mouse-pointer, edge, a sprite)` ? (`sensing_touchingobject`)      
+- [x] touching `(mouse-pointer, edge, a sprite)` ? (`sensing_touchingobject`)      
 - [ ] touching color `color` ? (`sensing_touchingcolor`)      
 - [ ] color `color` is touching `color` ? (`sensing_coloristouchingcolor`)      
 - [ ] distance to `(mouse-pointer, a sprite)` (`sensing_distanceto`)      

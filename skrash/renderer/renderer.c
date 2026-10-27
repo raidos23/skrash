@@ -138,6 +138,17 @@ SB3Texture *sb3_renderer_get_texture(SB3Renderer *r,
 
     if (tex == NULL) return NULL;
 
+    /* Mise a jour des dimensions du costume dans le projet */
+    for (size_t i = 0; i < project->target_count; ++i) {
+    SB3Target *t = &project->targets[i];
+    for (size_t j = 0; j < t->costume_count; ++j) {
+        if (t->costumes[j].asset_id && strcmp(t->costumes[j].asset_id, asset_id) == 0) {
+            t->costumes[j].width = tex->w;
+            t->costumes[j].height = tex->h;
+        }
+    }
+    }
+
     /* Mise en cache */
     if (r->cache_count == r->cache_cap) {
         size_t new_cap = r->cache_cap ? r->cache_cap * 2 : 16;

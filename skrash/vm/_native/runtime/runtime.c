@@ -53,54 +53,44 @@ int sb3_runtime_start(SB3Runtime *runtime)
     runtime->threads = NULL;
     runtime->thread_count = 0;
 
+    /* 1. Compter le nombre total de chapeaux (flag + key + etc.) */
     size_t count = 0;
-
-    for (size_t i = 0;
-         i < runtime->project->target_count;
-         ++i) {
+    for (size_t i = 0; i < runtime->project->target_count; ++i) {
         SB3Target *target = &runtime->project->targets[i];
-
-        if (sb3_target_find_block_by_kind(
-                target,
-                SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED) != NULL)
-            ++count;
+        for (size_t j = 0; j < target->block_count; ++j) {
+            SB3Block *b = &target->blocks[j];
+            if (b->kind == SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED && b->next != NULL) {
+                ++count;
+            }
+        }
     }
 
     if (count == 0)
         return 0;
 
-    runtime->threads = calloc(
-        count, sizeof(*runtime->threads));
-
+    runtime->threads = calloc(count, sizeof(*runtime->threads));
     if (runtime->threads == NULL)
         return 0;
 
+    /* 2. Créer un thread pour CHAQUE chapeau trouvé */
     for (size_t i = 0; i < runtime->project->target_count; ++i) {
-    SB3Target *target = &runtime->project->targets[i];
+        SB3Target *target = &runtime->project->targets[i];
+        for (size_t j = 0; j < target->block_count; ++j) {
+            SB3Block *b = &target->blocks[j];
+            
+            if (b->kind == SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED && b->next != NULL) {
+                const SB3Block *first = sb3_target_find_block(target, b->next);
+                if (first == NULL) continue;
 
-    const SB3Block *hat = sb3_target_find_block_by_kind(
-        target,
-        SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED);
-
-    if (hat == NULL || hat->next == NULL)
-        continue;
-
-    const SB3Block *first =
-        sb3_target_find_block(target, hat->next);
-
-    if (first == NULL)
-        continue;
-
-    SB3Thread *thread =
-        &runtime->threads[runtime->thread_count++];
-
-    memset(thread, 0, sizeof(*thread));
-
-    thread->runtime       = runtime;   
-    thread->target        = target;
-    thread->current_block = first;
-    thread->running       = 1;
-}
+                SB3Thread *thread = &runtime->threads[runtime->thread_count++];
+                memset(thread, 0, sizeof(*thread));
+                thread->runtime = runtime;
+                thread->target = target;
+                thread->current_block = first;
+                thread->running = 1;
+            }
+        }
+    }
 
     return runtime->thread_count > 0;
 }
