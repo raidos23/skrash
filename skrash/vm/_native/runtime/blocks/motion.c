@@ -13,6 +13,17 @@ static void normalize_direction(SB3Target *target)
         target->direction += 360.0;
 }
 
+/* Empêche le sprite de sortir de la scène */
+static void keep_in_fence(SB3Target *target)
+{
+    /* Scratch bloque le CENTRE du sprite, pas ses bords ( c'est pas exactement cela mais bon ) */
+    if (target->x < -240.0) target->x = -240.0;
+    if (target->x >  240.0) target->x =  240.0;
+    
+    if (target->y < -180.0) target->y = -180.0;
+    if (target->y >  180.0) target->y =  180.0;
+}
+
 int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
 {
     if (thread == NULL || thread->target == NULL || block == NULL)
@@ -28,6 +39,7 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
         double radians = target->direction * PI / 180.0;
         target->x += steps * sin(radians);
         target->y += steps * cos(radians);
+        keep_in_fence(target); 
         return 1;
     }
 
@@ -57,6 +69,7 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
             return 0;
         target->x = x;
         target->y = y;
+        keep_in_fence(target); 
         return 1;
     }
 
@@ -65,6 +78,7 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
         if (!sb3_input_evaluate(thread, &block->input_x, &x))
             return 0;
         target->x = x;
+        keep_in_fence(target); 
         return 1;
     }
 
@@ -73,6 +87,7 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
         if (!sb3_input_evaluate(thread, &block->input_y, &y))
             return 0;
         target->y = y;
+        keep_in_fence(target); 
         return 1;
     }
 
@@ -90,6 +105,7 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
         if (!sb3_input_evaluate(thread, &block->input_x, &dx))
             return 0;
         target->x += dx;
+        keep_in_fence(target); 
         return 1;
     }
 
@@ -98,6 +114,7 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
         if (!sb3_input_evaluate(thread, &block->input_y, &dy))
             return 0;
         target->y += dy;
+        keep_in_fence(target); 
         return 1;
     }
 
