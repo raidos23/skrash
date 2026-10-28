@@ -96,9 +96,9 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] wait until `condition` (`control_wait_until`)      
 - [ ] repeat until `condition` (`control_repeat_until`)      
 - [ ] stop `(all, this script, other scripts in sprite)` (`control_stop`)      
-- [ ] when I start as a clone (`control_start_as_clone`)      
-- [ ] create clone of `(myself, a sprite)` (`control_create_clone_of`)      
-- [ ] delete this clone (`control_delete_this_clone`)      
+- [x] when I start as a clone (`control_start_as_clone`)      
+- [x] create clone of `(myself, a sprite)` (`control_create_clone_of`)      
+- [x] delete this clone (`control_delete_this_clone`)      
 
 ---      
 
@@ -188,7 +188,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 
 - [x] SDL2 window + basic stage rendering      
 - [x] SVG costume rendering (nanosvg)      
-- [ ] Bitmap costumes      
+- [x] Bitmap costumes      
 - [ ] Graphic effects      
 - [ ] Layer ordering      
 - [ ] Sound engine      
