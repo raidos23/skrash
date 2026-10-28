@@ -80,6 +80,10 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN,
     SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT,
     SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECTMENU,
+    SB3_BLOCK_KIND_CONTROL_CREATECLONEOF,
+    SB3_BLOCK_KIND_CONTROL_CREATECLONEOFMENU,
+    SB3_BLOCK_KIND_CONTROL_DELETETHISCLONE,
+    SB3_BLOCK_KIND_CONTROL_STARTASCLONE,
 } SB3BlockKind;
 
 typedef enum SB3InputKind {
@@ -183,6 +187,7 @@ typedef struct SB3Target {
     double direction;
     double size;
     int visible;
+    int is_clone;
 
     SB3Block *blocks;
     size_t block_count;
@@ -233,5 +238,6 @@ const SB3Block *sb3_target_find_block_by_kind(
 
 SB3Variable *sb3_project_find_variable(SB3Project *project, SB3Target *context, const char *name);
 SB3List *sb3_project_find_list(SB3Project *project, SB3Target *context, const char *name);
+char *sb3_strdup_local(const char *text);
 
 #endif /* SKRASH_SB3_H */

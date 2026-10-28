@@ -180,7 +180,9 @@ int sb3_block_execute(SB3Thread *thread, const SB3Block *block)
     case SB3_BLOCK_KIND_CONTROL_FOREVER:
     case SB3_BLOCK_KIND_CONTROL_REPEAT:
     case SB3_BLOCK_KIND_CONTROL_WAIT:
-        return sb3_control_execute(thread, block);
+    case SB3_BLOCK_KIND_CONTROL_CREATECLONEOF:
+    case SB3_BLOCK_KIND_CONTROL_DELETETHISCLONE:
+    return sb3_control_execute(thread, block);
 
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     case SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED:

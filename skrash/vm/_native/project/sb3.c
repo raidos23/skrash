@@ -43,7 +43,7 @@ struct JsonValue {
     } as;
 };
 
-static char *sb3_strdup_local(const char *text)
+char *sb3_strdup_local(const char *text)
 {
     size_t length;
     char *copy;
@@ -161,6 +161,7 @@ static void sb3_target_init(SB3Target *target)
     target->costumes = NULL;
     target->costume_count = 0;
     target->current_costume = 0;
+    target->is_clone = 0;
 }
 
 static void sb3_project_init(SB3Project *project)
@@ -1022,6 +1023,12 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "event_whengreaterthan")        == 0) return SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN;
     if (strcmp(opcode, "sensing_touchingobject") == 0) return SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT;
     if (strcmp(opcode, "sensing_touchingobjectmenu") == 0) return SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECTMENU;
+    if (strcmp(opcode, "control_create_clone_of") == 0) return SB3_BLOCK_KIND_CONTROL_CREATECLONEOF;
+    if (strcmp(opcode, "control_create_clone_of_menu") == 0) return SB3_BLOCK_KIND_CONTROL_CREATECLONEOFMENU;
+    if (strcmp(opcode, "control_delete_this_clone") == 0) return SB3_BLOCK_KIND_CONTROL_DELETETHISCLONE;
+    if (strcmp(opcode, "control_start_as_clone") == 0) return SB3_BLOCK_KIND_CONTROL_STARTASCLONE;
+
+
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
@@ -1774,6 +1781,31 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     }
     break;
     }
+
+    case SB3_BLOCK_KIND_CONTROL_CREATECLONEOF: {
+    const JsonValue *inputs = json_object_get(block_value, "inputs");
+    const JsonValue *c_in = inputs ? json_object_get(inputs, "CLONE_OPTION") : NULL;
+    if (c_in && c_in->type == JSON_ARRAY && c_in->as.array.count >= 2) {
+        const JsonValue *body = c_in->as.array.items[1];
+        if (body && body->type == JSON_STRING) {
+            block->event_option = sb3_strdup_local(body->as.string); /* Shadow ID */
+        } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+            const JsonValue *inner = body->as.array.items[1];
+            if (inner && inner->type == JSON_STRING) {
+                block->message = sb3_strdup_local(inner->as.string);
+            }
+        }
+    }
+    break;
+    }
+    case SB3_BLOCK_KIND_CONTROL_CREATECLONEOFMENU: {
+    block->message = sb3_read_field_array0(block_value, "CLONE_OPTION");
+    break;
+    }
+    case SB3_BLOCK_KIND_CONTROL_DELETETHISCLONE:
+    case SB3_BLOCK_KIND_CONTROL_STARTASCLONE:
+    break;
+
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:
@@ -1963,6 +1995,7 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
         }
 
         target->blocks = items;
+        
 
         /* Resolution des shadows (menus deroulants) */
         for (index = 0; index < target->block_count; ++index) {
@@ -1980,6 +2013,18 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
                         }
                     }
                 }  
+
+            if (b->kind == SB3_BLOCK_KIND_CONTROL_CREATECLONEOF && 
+                b->message == NULL && b->event_option != NULL) {
+                    for (size_t k = 0; k < target->block_count; ++k) {
+                        SB3Block *opt = &target->blocks[k];
+                        if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
+                            if (opt->message) b->message = sb3_strdup_local(opt->message);
+                            
+                        break;
+                        }
+                    }
+                }
             }
         }
 

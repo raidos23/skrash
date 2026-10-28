@@ -13,12 +13,12 @@ static void sb3_thread_finish_body(SB3Thread *thread, const SB3Block *next)
         SB3RepeatFrame *frame =
             &thread->repeat_stack[thread->repeat_depth - 1];
 
-        if (frame->forever) {                 /* D'ABORD */
+        if (frame->forever) {               
             thread->current_block = frame->body;
             return;
         }
 
-        frame->remaining--;                   /* ENSUITE */
+        frame->remaining--;               
 
         if (frame->remaining > 0) {
             thread->current_block = frame->body;
@@ -126,27 +126,22 @@ int sb3_thread_step(SB3Thread *thread)
       }
 
     if (thread->is_waiting) {
-        if (sb3_now_seconds() < thread->wait_until)
-            return 1;
-
-        thread->is_waiting = 0;
-        thread->wait_until = 0.0;
-
-        const SB3Block *block = thread->current_block;
-        const SB3Block *next = NULL;
-
-        if (block->next != NULL) {
-            next = sb3_target_find_block(
-                thread->target,
-                block->next
-            );
-        }
-
-        sb3_thread_finish_body(thread, next);
-        return thread->running;
-    }
-
+    if (sb3_now_seconds() < thread->wait_until) return 1; // on attend encore
+    
+    thread->is_waiting = 0;
+    
+    // On est à la fin du bloc wait, on avance au suivant
     const SB3Block *block = thread->current_block;
+    const SB3Block *next = NULL;
+    if (block && block->next) next = sb3_target_find_block(thread->target, block->next);
+    
+    if (next) thread->current_block = next;
+    else sb3_thread_finish_body(thread, NULL); 
+    
+    return 1;
+}
+    
+      const SB3Block *block = thread->current_block;
     
     if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT ||
         block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER) {
@@ -205,7 +200,7 @@ int sb3_thread_step(SB3Thread *thread)
         thread->running = 0;
         return 0;
     }
-
+    
     if (thread->is_waiting)
         return 1;
 

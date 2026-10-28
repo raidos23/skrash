@@ -2,6 +2,7 @@
 #include "time_util.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 static void spawn_hat_thread(SB3Runtime *runtime, SB3Target *target, const SB3Block *hat);
 
@@ -20,6 +21,8 @@ static void sb3_runtime_reset(SB3Runtime *runtime)
     runtime->mouse_x = 240;  /* Centre de l'écran Scratch (480/2) */
     runtime->mouse_y = 180;  /* Centre de l'écran Scratch (360/2) */
     runtime->timer_start = 0;
+    runtime->clones = NULL;
+    runtime->clone_count = 0;
 }
 
 int sb3_runtime_init(SB3Runtime *runtime, SB3Project *project)
@@ -31,15 +34,26 @@ int sb3_runtime_init(SB3Runtime *runtime, SB3Project *project)
     runtime->project = project;
     runtime->timer_start = sb3_now_seconds();
 
+    /* Allocation UNIQUE des deux tableaux fixes */
+    runtime->threads = calloc(SB3_MAX_THREADS, sizeof(SB3Thread));
+    runtime->clones  = calloc(SB3_MAX_CLONES,  sizeof(SB3Target));
+
+    if (runtime->threads == NULL || runtime->clones == NULL) {
+        free(runtime->threads);
+        free(runtime->clones);
+        return 0;
+    }
 
     return 1;
 }
-
 void sb3_runtime_free(SB3Runtime *runtime)
 {
-    if (runtime == NULL)
-        return;
+    if (runtime == NULL) return;
 
+    for (size_t i = 0; i < runtime->clone_count; ++i) {
+        free(runtime->clones[i].name);
+    }
+    free(runtime->clones);
     free(runtime->threads);
     sb3_runtime_reset(runtime);
 }
@@ -49,11 +63,11 @@ int sb3_runtime_start(SB3Runtime *runtime)
     if (runtime == NULL || runtime->project == NULL)
         return 0;
 
-    free(runtime->threads);
-    runtime->threads = NULL;
+    /* Le tableau est alloue une fois pour toutes dans sb3_runtime_init.
+       On le vide simplement. */
     runtime->thread_count = 0;
 
-    /* 1. Compter le nombre total de chapeaux (flag + key + etc.) */
+    /* 1. Compter le nombre total de chapeaux */
     size_t count = 0;
     for (size_t i = 0; i < runtime->project->target_count; ++i) {
         SB3Target *target = &runtime->project->targets[i];
@@ -68,9 +82,8 @@ int sb3_runtime_start(SB3Runtime *runtime)
     if (count == 0)
         return 0;
 
-    runtime->threads = calloc(count, sizeof(*runtime->threads));
-    if (runtime->threads == NULL)
-        return 0;
+    if (count > SB3_MAX_THREADS)
+        return 0; /* Au cas ou */
 
     /* 2. Créer un thread pour CHAQUE chapeau trouvé */
     for (size_t i = 0; i < runtime->project->target_count; ++i) {
@@ -87,6 +100,8 @@ int sb3_runtime_start(SB3Runtime *runtime)
                 thread->runtime = runtime;
                 thread->target = target;
                 thread->current_block = first;
+                fprintf(stderr, "[START] thread for %s chapeau=%s\n",
+        target->name, b->opcode);
                 thread->running = 1;
             }
         }
@@ -113,22 +128,21 @@ int sb3_runtime_step(SB3Runtime *runtime) {
         }
     }
 
-    /* 2. Avancement normal des threads (on fige la taille au debut) */
+    /* 2. Avancement normal des threads */
     int any_running = 0;
-    size_t count_at_start = runtime->thread_count; 
-    
+    size_t count_at_start = runtime->thread_count;
+
     for (size_t i = 0; i < count_at_start; ++i) {
-        SB3Thread *th = &runtime->threads[i];
-        if (!th->running) continue;
-        sb3_thread_step(th);
-        if (th->running) any_running = 1;
+        if (!runtime->threads[i].running) continue;
+        sb3_thread_step(&runtime->threads[i]);
+        if (runtime->threads[i].running) any_running = 1;
     }
-    
-    /* Si de nouveaux threads ont ete crees pendant l'execution, on continue */
+
+    /* 3. Si de nouveaux threads ont ete crees, on continue */
     if (runtime->thread_count > count_at_start) {
         any_running = 1;
     }
-    
+
     return any_running;
 }
 
@@ -169,10 +183,10 @@ int sb3_runtime_is_key_pressed(SB3Runtime *runtime, const char *key_name) {
 /* Fonction utilitaire interne pour créer un thread à partir d'un chapeau */
 static void spawn_hat_thread(SB3Runtime *runtime, SB3Target *target, const SB3Block *hat) {
     if (!hat->next) return;
-    SB3Thread *new_threads = realloc(runtime->threads, (runtime->thread_count + 1) * sizeof(SB3Thread));
-    if (!new_threads) return;
-    runtime->threads = new_threads;
     
+    // Plus de realloc Le tableau est fixe
+    if (runtime->thread_count >= SB3_MAX_THREADS) return;
+
     SB3Thread *th = &runtime->threads[runtime->thread_count++];
     memset(th, 0, sizeof(*th));
     th->runtime = runtime;
@@ -241,4 +255,34 @@ void sb3_runtime_broadcast_and_wait(SB3Runtime *runtime, SB3Thread *calling_thre
     // 2. On dit au thread appelant d'attendre
     calling_thread->waiting_for_broadcast = 1;
     calling_thread->broadcast_start_count = start_count;
+}
+
+void sb3_runtime_create_clone(SB3Runtime *runtime, SB3Target *original) {
+    if (!runtime || !original) return;
+
+    /* Plus de realloc, tableau fixe */
+    if (runtime->clone_count >= SB3_MAX_CLONES) return;
+
+    SB3Target *clone = &runtime->clones[runtime->clone_count++];
+    *clone = *original;
+    
+    clone->is_clone = 1;
+    
+    if (original->name) clone->name = sb3_strdup_local(original->name);
+
+   for (size_t j = 0; j < original->block_count; ++j) {
+    SB3Block *b = &original->blocks[j];
+    if (b->kind == SB3_BLOCK_KIND_CONTROL_STARTASCLONE && b->next != NULL) {
+        if (runtime->thread_count >= SB3_MAX_THREADS) return;
+        
+        SB3Thread *th = &runtime->threads[runtime->thread_count++];
+        memset(th, 0, sizeof(*th));
+        th->runtime = runtime;
+        th->target = clone;
+        th->current_block = sb3_target_find_block(clone, b->next);
+        th->running = (th->current_block != NULL);
+        
+        break;  /* UN SEUL THREAD PAR CLONE */
+    }
+}
 }

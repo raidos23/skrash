@@ -451,6 +451,39 @@ void sb3_renderer_draw_targets(SB3Renderer *r, SB3Project *project)
                               (float)t->direction, rr, gg, bb);
         }
     }
+/* --- Dessiner les CLONES --- */
+if (r->runtime_ptr) {
+    SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
+    
+    for (size_t i = 0; i < rt->clone_count; ++i) {
+        SB3Target *t = &rt->clones[i];
+        if (!t->visible) continue;
+
+        float cx, cy;
+        scratch_to_screen((float)t->x, (float)t->y, &cx, &cy);
+
+        SB3Texture *tex = NULL;
+        if (t->costume_count > 0 && t->current_costume < t->costume_count) {
+            SB3Costume *c = &t->costumes[t->current_costume];
+            tex = sb3_renderer_get_texture(r, project, c->asset_id);
+        }
+
+        if (tex != NULL) {
+            float scale = (float)t->size / 100.0f;
+            float w = (float)tex->w * scale;
+            float h = (float)tex->h * scale;
+            SDL_Rect dst = { (int)(cx - w/2), (int)(cy - h/2), (int)w, (int)h };
+            double angle = (double)t->direction - 90.0;
+            SDL_Point center = { dst.w / 2, dst.h / 2 };
+            SDL_RenderCopyEx(r->sdl, tex->tex, NULL, &dst, angle, &center, SDL_FLIP_NONE);
+        } else {
+            Uint8 rr, gg, bb;
+            sprite_color(t->name, &rr, &gg, &bb);
+            float w = 100.0f * (float)t->size / 100.0f;
+            draw_rotated_rect(r, cx, cy, w, w, (float)t->direction, rr, gg, bb);
+        }
+    }
+}
 }
 
 void sb3_renderer_present(SB3Renderer *r)

@@ -15,6 +15,9 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
     if (!sb3_input_evaluate_string(thread, &block->input_message, buf, sizeof(buf)))
         return 0;
     printf("[%s] (say) %s\n", thread->target->name ? thread->target->name : "?", buf);
+    printf("[%s] (say) %s\n", 
+       thread->target->is_clone ? "CLONE" : thread->target->name, 
+       buf);
     return 1;
     }
     case SB3_BLOCK_KIND_LOOKS_THINK: {

@@ -1,5 +1,7 @@
 #ifndef SKRASH_RUNTIME_H
 #define SKRASH_RUNTIME_H
+#define SB3_MAX_THREADS 1024
+#define SB3_MAX_CLONES 1024
 
 #include <stddef.h>
 
@@ -18,7 +20,8 @@ typedef struct SB3Runtime {
     int mouse_y;
     double timer_start;
     int greater_than_state[64]; // Pour stocker l'etat precedent par bloc
-
+    SB3Target *clones;
+    size_t clone_count;
     
 } SB3Runtime;
 
@@ -34,5 +37,7 @@ int sb3_runtime_is_key_pressed(SB3Runtime *runtime, const char *key_name);
 void sb3_runtime_trigger_key_hats(SB3Runtime *runtime, int scancode);
 void sb3_runtime_broadcast(SB3Runtime *runtime, const char *message);
 void sb3_runtime_trigger_clicks(SB3Runtime *runtime, int x, int y, SB3Target *clicked_target);
+
+void sb3_runtime_create_clone(SB3Runtime *runtime, SB3Target *original);
 
 #endif /* SKRASH_RUNTIME_H */
