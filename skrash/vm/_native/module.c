@@ -7,6 +7,44 @@
 #include "../../renderer/renderer.h"
 
 /* ------------------------------------------------------------------ */
+/* Registre global des callbacks green flag                           */
+/* ------------------------------------------------------------------ */
+
+static PyObject *g_green_flag_callbacks = NULL;   /* liste Python ou NULL */
+
+static void
+skrash_ensure_green_flag_registry(void) {
+    if (g_green_flag_callbacks == NULL) {
+        g_green_flag_callbacks = PyList_New(0);
+    }
+}
+
+static void
+skrash_consume_green_flag_callbacks(void) {
+    if (g_green_flag_callbacks == NULL)
+        return;
+
+    Py_ssize_t n = PyList_Size(g_green_flag_callbacks);
+    if (n <= 0)
+        return;
+
+    for (Py_ssize_t i = 0; i < n; ++i) {
+        PyObject *cb = PyList_GetItem(g_green_flag_callbacks, i);
+        if (cb == NULL) continue;
+
+        PyObject *result = PyObject_CallNoArgs(cb);
+        if (result == NULL) {
+            PyErr_Print();
+            continue;
+        }
+        Py_DECREF(result);
+    }
+
+    if (PyList_SetSlice(g_green_flag_callbacks, 0, n, NULL) < 0)
+        PyErr_Print();
+}
+
+/* ------------------------------------------------------------------ */
 /* SkrashProject                                                      */
 /* ------------------------------------------------------------------ */
 
@@ -15,6 +53,9 @@ typedef struct {
     SB3Project *project;
     SB3Runtime runtime;
 } SkrashProject;
+
+/* forward declaration : utilisee dans skrash_load avant sa definition */
+static PyTypeObject SkrashProjectType;
 
 static void
 SkrashProject_dealloc(SkrashProject *self) {
@@ -128,6 +169,18 @@ SkrashSprite_say(SkrashSprite *self, PyObject *args) {
     Py_RETURN_NONE;
 }
 
+static PyObject *
+SkrashSprite_show(SkrashSprite *self, PyObject *Py_UNUSED(args)) {
+    self->target->visible = 1;
+    Py_RETURN_NONE;
+}
+
+static PyObject *
+SkrashSprite_hide(SkrashSprite *self, PyObject *Py_UNUSED(args)) {
+    self->target->visible = 0;
+    Py_RETURN_NONE;
+}
+
 /* --- Definitions Sprite --- */
 
 static PyGetSetDef SkrashSprite_getset[] = {
@@ -140,6 +193,8 @@ static PyGetSetDef SkrashSprite_getset[] = {
 static PyMethodDef SkrashSprite_methods[] = {
     {"move", (PyCFunction)SkrashSprite_move, METH_VARARGS, "Move the sprite by N steps."},
     {"say",  (PyCFunction)SkrashSprite_say,  METH_VARARGS, "Say a message."},
+    {"show", (PyCFunction)SkrashSprite_show, METH_NOARGS,  "Make the sprite visible."},
+    {"hide", (PyCFunction)SkrashSprite_hide, METH_NOARGS,  "Hide the sprite."},
     {NULL}
 };
 
@@ -153,8 +208,6 @@ static PyTypeObject SkrashSpriteType = {
     .tp_methods   = SkrashSprite_methods,
     .tp_getset    = SkrashSprite_getset,
 };
-
-
 
 
 /* ------------------------------------------------------------------ */
@@ -217,9 +270,6 @@ static PyTypeObject SkrashVariableType = {
 /* Fonctions Project                                                  */
 /* ------------------------------------------------------------------ */
 
-/* forward declaration pour le dispatch des methodes */
-static PyTypeObject SkrashProjectType;
-
 static PyObject *
 skrash_load(PyObject *self, PyObject *args) {
     const char *path;
@@ -269,6 +319,8 @@ SkrashProject_start(SkrashProject *self, PyObject *Py_UNUSED(args)) {
         return NULL;
     }
 
+    skrash_consume_green_flag_callbacks();
+
     Py_RETURN_NONE;
 }
 
@@ -302,6 +354,7 @@ SkrashProject_run(SkrashProject *self, PyObject *Py_UNUSED(args)) {
     renderer.runtime_ptr = &self->runtime;
 
     sb3_runtime_start(&self->runtime);
+    skrash_consume_green_flag_callbacks();
 
     while (sb3_renderer_poll(&renderer)) {
         sb3_runtime_step(&self->runtime);
@@ -318,113 +371,107 @@ SkrashProject_run(SkrashProject *self, PyObject *Py_UNUSED(args)) {
     Py_RETURN_NONE;
 }
 
+/* Propriete : dict de sprites (hors stage) par nom */
 static PyObject *
-SkrashProject_get_sprite(SkrashProject *self, PyObject *args) {
-    const char *name;
-    if (!PyArg_ParseTuple(args, "s", &name))
+SkrashProject_get_sprites(SkrashProject *self, void *closure) {
+    (void)closure;
+    if (self->project == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Project is not loaded.");
+        return NULL;
+    }
+
+    PyObject *dict = PyDict_New();
+    if (dict == NULL)
         return NULL;
 
     for (size_t i = 0; i < self->project->target_count; ++i) {
         SB3Target *t = &self->project->targets[i];
-        if (t->name && strcmp(t->name, name) == 0) {
-            SkrashSprite *spr = PyObject_New(SkrashSprite, &SkrashSpriteType);
-            if (!spr) return NULL;
-            spr->target = t;
-            return (PyObject *)spr;
+        if (t->is_stage || t->name == NULL)
+            continue;
+
+        SkrashSprite *spr = PyObject_New(SkrashSprite, &SkrashSpriteType);
+        if (spr == NULL) {
+            Py_DECREF(dict);
+            return NULL;
         }
+        spr->target = t;
+
+        if (PyDict_SetItemString(dict, t->name, (PyObject *)spr) < 0) {
+            Py_DECREF(spr);
+            Py_DECREF(dict);
+            return NULL;
+        }
+        Py_DECREF(spr);
     }
 
-    PyErr_Format(PyExc_KeyError, "Sprite not found: %s", name);
-    return NULL;
+    return dict;
 }
 
+/* Propriete : dict de variables (toutes cibles) par nom */
 static PyObject *
-SkrashProject_get_variable(SkrashProject *self, PyObject *args) {
-    const char *name;
-    if (!PyArg_ParseTuple(args, "s", &name))
+SkrashProject_get_variables(SkrashProject *self, void *closure) {
+    (void)closure;
+    if (self->project == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Project is not loaded.");
+        return NULL;
+    }
+
+    PyObject *dict = PyDict_New();
+    if (dict == NULL)
         return NULL;
 
-    /* On cherche dans le stage (variables globales)
-       puis dans tous les sprites (variables locales) */
     for (size_t i = 0; i < self->project->target_count; ++i) {
         SB3Target *t = &self->project->targets[i];
         for (size_t j = 0; j < t->variable_count; ++j) {
             SB3Variable *var = &t->variables[j];
-            if (var->name && strcmp(var->name, name) == 0) {
-                SkrashVariable *pyvar = PyObject_New(SkrashVariable, &SkrashVariableType);
-                if (!pyvar) return NULL;
-                pyvar->variable = var;
-                return (PyObject *)pyvar;
+            if (var->name == NULL)
+                continue;
+
+            SkrashVariable *pyvar = PyObject_New(SkrashVariable, &SkrashVariableType);
+            if (pyvar == NULL) {
+                Py_DECREF(dict);
+                return NULL;
             }
+            pyvar->variable = var;
+
+            if (PyDict_SetItemString(dict, var->name, (PyObject *)pyvar) < 0) {
+                Py_DECREF(pyvar);
+                Py_DECREF(dict);
+                return NULL;
+            }
+            Py_DECREF(pyvar);
         }
     }
 
-    PyErr_Format(PyExc_KeyError, "Variable not found: %s", name);
-    return NULL;
+    return dict;
 }
 
 /* ------------------------------------------------------------------ */
-/* Fonctions module-level                                             */
+/* Decorateur module-level : when_green_flag_clicked                  */
 /* ------------------------------------------------------------------ */
 
 static PyObject *
-skrash_get_sprite(PyObject *self, PyObject *args) {
-    PyObject *project_obj;
-
+skrash_when_green_flag_clicked(PyObject *self, PyObject *args) {
+    PyObject *cb;
     (void)self;
 
-    if (!PyArg_ParseTuple(args, "O", &project_obj))
+    if (!PyArg_ParseTuple(args, "O", &cb))
         return NULL;
 
-    if (!PyObject_TypeCheck(project_obj, &SkrashProjectType)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "get_sprite() first argument must be a Project");
-        return NULL;
-    }
-
-    /* Retire le premier argument (le Project), laisse ("nom",) */
-    PyObject *rest = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
-    if (rest == NULL)
-        return NULL;
-
-    PyObject *result = SkrashProject_get_sprite((SkrashProject *)project_obj, rest);
-    Py_DECREF(rest);
-    return result;
-}
-
-static PyObject *
-skrash_get_variable(PyObject *self, PyObject *args) {
-    PyObject *project_obj;
-    const char *name;
-
-    (void)self;
-
-    if (!PyArg_ParseTuple(args, "Os", &project_obj, &name))
-        return NULL;
-
-    if (!PyObject_TypeCheck(project_obj, &SkrashProjectType)) {
-        PyErr_SetString(PyExc_TypeError,
-                        "get_variable() first argument must be a Project");
+    if (!PyCallable_Check(cb)) {
+        PyErr_SetString(PyExc_TypeError, "callback must be callable");
         return NULL;
     }
 
-    SkrashProject *proj = (SkrashProject *)project_obj;
+    skrash_ensure_green_flag_registry();
+    if (g_green_flag_callbacks == NULL)
+        return NULL;
 
-    for (size_t i = 0; i < proj->project->target_count; ++i) {
-        SB3Target *t = &proj->project->targets[i];
-        for (size_t j = 0; j < t->variable_count; ++j) {
-            SB3Variable *var = &t->variables[j];
-            if (var->name && strcmp(var->name, name) == 0) {
-                SkrashVariable *pyvar = PyObject_New(SkrashVariable, &SkrashVariableType);
-                if (!pyvar) return NULL;
-                pyvar->variable = var;
-                return (PyObject *)pyvar;
-            }
-        }
-    }
+    if (PyList_Append(g_green_flag_callbacks, cb) < 0)
+        return NULL;
 
-    PyErr_Format(PyExc_KeyError, "Variable not found: %s", name);
-    return NULL;
+    Py_INCREF(cb);
+    return cb;
 }
 
 /* ------------------------------------------------------------------ */
@@ -432,12 +479,16 @@ skrash_get_variable(PyObject *self, PyObject *args) {
 /* ------------------------------------------------------------------ */
 
 static PyMethodDef SkrashProject_methods[] = {
-    {"start",      (PyCFunction)SkrashProject_start,      METH_NOARGS,  "Start the Scratch project."},
-    {"step",       (PyCFunction)SkrashProject_step,       METH_NOARGS,  "Execute one runtime step."},
-    {"run",        (PyCFunction)SkrashProject_run,        METH_NOARGS,  "Run the project (opens SDL window)."},
-    {"get_sprite", (PyCFunction)SkrashProject_get_sprite, METH_VARARGS, "Get a sprite by name."},
-    {"get_variable", (PyCFunction)SkrashProject_get_variable, METH_VARARGS, "Get a variable by name."},
+    {"start", (PyCFunction)SkrashProject_start, METH_NOARGS, "Start the Scratch project."},
+    {"step",  (PyCFunction)SkrashProject_step,  METH_NOARGS, "Execute one runtime step."},
+    {"run",   (PyCFunction)SkrashProject_run,   METH_NOARGS, "Run the project (opens SDL window)."},
     {NULL, NULL, 0, NULL}
+};
+
+static PyGetSetDef SkrashProject_getset[] = {
+    {"sprites",   (getter)SkrashProject_get_sprites,   NULL, "Dict of sprites by name (stage excluded)", NULL},
+    {"variables", (getter)SkrashProject_get_variables, NULL, "Dict of variables by name",                 NULL},
+    {NULL}
 };
 
 static PyTypeObject SkrashProjectType = {
@@ -448,6 +499,7 @@ static PyTypeObject SkrashProjectType = {
     .tp_flags     = Py_TPFLAGS_DEFAULT,
     .tp_doc       = "Scratch 3 project",
     .tp_methods   = SkrashProject_methods,
+    .tp_getset    = SkrashProject_getset,
 };
 
 /* ------------------------------------------------------------------ */
@@ -455,9 +507,8 @@ static PyTypeObject SkrashProjectType = {
 /* ------------------------------------------------------------------ */
 
 static PyMethodDef Skrash_methods[] = {
-    {"load",         skrash_load,         METH_VARARGS, "Load a Scratch 3 project."},
-    {"get_sprite",   skrash_get_sprite,   METH_VARARGS, "Get a sprite by name from a Project."},
-    {"get_variable", skrash_get_variable, METH_VARARGS, "Get a variable by name from a Project."},
+    {"load",                    skrash_load,                    METH_VARARGS, "Load a Scratch 3 project."},
+    {"when_green_flag_clicked", skrash_when_green_flag_clicked, METH_VARARGS, "Register a function to be called when the project starts."},
     {NULL, NULL, 0, NULL}
 };
 

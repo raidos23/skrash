@@ -1,4 +1,15 @@
-from ._native._core import Project, Sprite, load, get_variable
+from ._native._core import (
+    Project,
+    Sprite,
+    Variable,
+    load,
+    when_green_flag_clicked,
+)
 
-__all__ = ["Project", "Sprite", "load", "get_variable"]
-__version__ = "0.1.0"
+__all__ = [
+    "Project",
+    "Sprite",
+    "Variable",
+    "load",
+    "when_green_flag_clicked",
+]

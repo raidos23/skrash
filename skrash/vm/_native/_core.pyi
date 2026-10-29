@@ -1,3 +1,25 @@
+from typing import Callable, TypeVar
+
+F = TypeVar("F", bound=Callable[..., None])
+
+
+class Variable:
+    """A variable in a loaded Scratch project."""
+
+    @property
+    def name(self) -> str:
+        """Variable name."""
+        ...
+
+    @property
+    def value(self) -> float:
+        """Current numeric value."""
+        ...
+
+    @value.setter
+    def value(self, value: float) -> None: ...
+
+
 class Sprite:
     """A sprite in a loaded Scratch project."""
 
@@ -30,38 +52,55 @@ class Sprite:
         ...
 
     def say(self, message: str) -> None:
-        """Display a speech bubble."""
+        """Display a speech bubble (currently prints to stdout)."""
+        ...
+
+    def show(self) -> None:
+        """Make the sprite visible."""
+        ...
+
+    def hide(self) -> None:
+        """Hide the sprite."""
         ...
 
 
 class Project:
     """A loaded Scratch 3 project."""
 
+    @property
+    def sprites(self) -> dict[str, Sprite]:
+        """Dict of sprites by name (stage excluded).
+
+        Returns a fresh dict each access.
+        """
+        ...
+
+    @property
+    def variables(self) -> dict[str, Variable]:
+        """Dict of variables by name.
+
+        If two variables share a name (one global, one local), the
+        later one overwrites the earlier in the dict.
+        Returns a fresh dict each access.
+        """
+        ...
+
     def start(self) -> None:
-        """Start the Scratch runtime."""
+        """Start the Scratch runtime and fire green-flag callbacks."""
         ...
 
     def step(self) -> bool:
         """Execute one runtime step.
 
-        Returns:
-            True if the runtime is still active, False when it has
-            finished or cannot execute another step.
+        Returns True if the runtime is still active, False otherwise.
         """
         ...
 
     def run(self) -> None:
         """Run the project inside an SDL2 window.
 
-        Blocks until the window is closed (Escape key or close button).
-        """
-        ...
-
-    def get_sprite(self, name: str) -> Sprite:
-        """Return the sprite with the given name.
-
-        Raises:
-            KeyError: if no sprite matches `name`.
+        Starts the runtime, fires green-flag callbacks, then blocks
+        until the window is closed (Escape or close button).
         """
         ...
 
@@ -69,32 +108,16 @@ class Project:
 def load(path: str) -> Project:
     """Load a Scratch 3 project from an .sb3 file.
 
-    Raises:
-        RuntimeError: if the file cannot be loaded or parsed.
+    Raises RuntimeError if the file cannot be loaded or parsed.
     """
     ...
 
-def get_variable(self, name: str) -> Variable:
-        """Return a variable by name.
-        
-        Raises:
-            KeyError: if the variable does not exist.
-        """
-        ...
 
-class Variable:
-    """A variable in a loaded Scratch project."""
+def when_green_flag_clicked(func: F) -> F:
+    """Register `func` to be called when the project starts.
 
-    @property
-    def name(self) -> str:
-        """Variable name."""
-        ...
-
-    @property
-    def value(self) -> float:
-        """Current numeric value."""
-        ...
-
-    @value.setter
-    def value(self, value: float) -> None: ...
-
+    Stored in a global registry, consumed by the next
+    `Project.start()` or `Project.run()` call. The registry is
+    cleared after consumption.
+    """
+    ...

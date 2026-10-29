@@ -81,7 +81,7 @@ Status legend:
 ## Events
 
 - [x] when green flag clicked (`event_whenflagclicked`)
-- [x] when `key` key pressed (`event_whenkeypressed`) — limited mapping (a-z, space, arrows, `any` via is_key_pressed only)
+- [x] when `key` key pressed (`event_whenkeypressed`) — limited mapping (a-z, space, arrows)
 - [x] when this sprite clicked (`event_whenthisspriteclicked`)
 - [x] when stage clicked (`event_whenstageclicked`)
 - [ ] when backdrop switches to `backdrop` (`event_whenbackdropswitchesto`)
@@ -211,16 +211,19 @@ Status legend:
 - [x] `skrash.load(path)`
 - [x] `Project.start()` / `Project.step()`
 - [x] `Project.run()` (opens SDL2 window)
-- [x] `Project.get_sprite(name)`
+- [x] `Project.sprites` — dict of sprites by name (stage excluded)
+- [x] `Project.variables` — dict of variables by name
 - [x] `Sprite.x` / `Sprite.y` / `Sprite.direction` (read/write)
 - [x] `Sprite.move(steps)`
-- [x] `Sprite.say(message)`
-- [x] `Project.get_variable(name)`
-- [ ] `@when_green_flag_clicked` decorator
+- [x] `Sprite.say(message)` — prints to stdout
+- [x] `Sprite.show()` / `Sprite.hide()`
+- [x] `Variable.value` (read/write)
+- [x] `Variable.name` (read-only)
+- [x] `@when_green_flag_clicked` decorator (global registry, consumed by next `start()`/`run()`)
 - [ ] `@when_receive("msg")` decorator
-- [ ] `wait(seconds)` (blocking for now, greenlets later)
-- [ ] `Sprite.costume` / `Sprite.size` / `Sprite.visible` (read/write)
-- [ ] `Project.targets` (list all sprites)
+- [ ] `wait(seconds)` (blocking + event pump, no greenlets yet)
+- [ ] `Sprite.costume` / `Sprite.size` (read/write)
+- [ ] `Project.targets` (list all sprites, including stage)
 
 ---
 
@@ -228,6 +231,9 @@ Status legend:
 
 - Variables and lists: `double`-only storage for variables, `char*` truncated at 512 for lists. Text values in `set [var] to (join ...)` are lost (stored as 0).
 - `operator_equals`, `gt`, `lt`: numeric comparison only, no string fallback.
-- Clones: share blocks and costumes with the original (correct), but local-variable copy semantics are applied via deep copy in `sb3_runtime_create_clone` (see commits).
+- Clones: share blocks and costumes with the original (correct), but local-variable copy semantics are applied via deep copy in `sb3_runtime_create_clone`.
 - Renderer: no layer sorting, no graphic effects, no say overlay.
 - `when_timer >`: rising-edge latch implemented (`greater_than_latched`).
+- `@when_green_flag_clicked`: global registry, cleared after first `start()` or `run()`. Multiple projects cannot share the same callbacks.
+- `project.sprites` / `project.variables`: each access returns a fresh dict; wrappers are recreated on every access (no caching).
+- `Sprite.say()`: prints to stdout, not rendered in the SDL window.

@@ -2,7 +2,7 @@ import skrash
 
 project = skrash.load("tests/checks/data.sb3")
 
-compteur = project.get_variable("compteur")
+compteur = project.variables("compteur")
 print("Nom :", compteur.name)
 print("Valeur initiale :", compteur.value)
 
