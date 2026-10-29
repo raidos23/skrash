@@ -208,7 +208,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] `Sprite.x` / `Sprite.y` / `Sprite.direction` (read/write)      
 - [x] `Sprite.move(steps)`      
 - [x] `Sprite.say(message)`      
-- [ ] `Project.get_variable(name)`      
+- [x] `Project.get_variable(name)`      
 - [ ] `@when_green_flag_clicked` decorator      
 - [ ] `@when_receive("msg")` decorator      
 - [ ] `wait(seconds)` (blocking for now, greenlets later)      
