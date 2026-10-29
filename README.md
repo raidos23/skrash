@@ -48,7 +48,11 @@ project.run()
       
 ## Status      
       
-See **[Todo.md](Todo.md)** for the detailed list of implemented Scratch blocks and remaining work.      
+See **[Todo.md](Todo.md)** for the detailed list of implemented Scratch blocks and remaining work.  
+
+## Documentation
+
+- [Python API](docs/api.md)
       
 ## License
 
