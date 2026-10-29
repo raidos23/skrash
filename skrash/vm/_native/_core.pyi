@@ -1,7 +1,3 @@
-"""Type stubs for skrash._core."""
-
-from typing import Optional
-
 class Sprite:
     """A sprite in a loaded Scratch project."""
 
@@ -77,3 +73,28 @@ def load(path: str) -> Project:
         RuntimeError: if the file cannot be loaded or parsed.
     """
     ...
+
+def get_variable(self, name: str) -> Variable:
+        """Return a variable by name.
+        
+        Raises:
+            KeyError: if the variable does not exist.
+        """
+        ...
+
+class Variable:
+    """A variable in a loaded Scratch project."""
+
+    @property
+    def name(self) -> str:
+        """Variable name."""
+        ...
+
+    @property
+    def value(self) -> float:
+        """Current numeric value."""
+        ...
+
+    @value.setter
+    def value(self, value: float) -> None: ...
+
