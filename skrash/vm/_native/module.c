@@ -17,8 +17,7 @@ typedef struct {
 } SkrashProject;
 
 static void
-SkrashProject_dealloc(SkrashProject *self)
-{
+SkrashProject_dealloc(SkrashProject *self) {
     sb3_runtime_free(&self->runtime);
 
     if (self->project != NULL) {
@@ -39,8 +38,7 @@ typedef struct {
 } SkrashSprite;
 
 static void
-SkrashSprite_dealloc(SkrashSprite *self)
-{
+SkrashSprite_dealloc(SkrashSprite *self) {
     /* On ne libere PAS le target : il appartient au projet. */
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
@@ -48,15 +46,13 @@ SkrashSprite_dealloc(SkrashSprite *self)
 /* --- Proprietes --- */
 
 static PyObject *
-SkrashSprite_get_x(SkrashSprite *self, void *closure)
-{
+SkrashSprite_get_x(SkrashSprite *self, void *closure) {
     (void)closure;
     return PyFloat_FromDouble(self->target->x);
 }
 
 static int
-SkrashSprite_set_x(SkrashSprite *self, PyObject *value, void *closure)
-{
+SkrashSprite_set_x(SkrashSprite *self, PyObject *value, void *closure) {
     (void)closure;
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError, "Cannot delete x");
@@ -69,15 +65,13 @@ SkrashSprite_set_x(SkrashSprite *self, PyObject *value, void *closure)
 }
 
 static PyObject *
-SkrashSprite_get_y(SkrashSprite *self, void *closure)
-{
+SkrashSprite_get_y(SkrashSprite *self, void *closure) {
     (void)closure;
     return PyFloat_FromDouble(self->target->y);
 }
 
 static int
-SkrashSprite_set_y(SkrashSprite *self, PyObject *value, void *closure)
-{
+SkrashSprite_set_y(SkrashSprite *self, PyObject *value, void *closure) {
     (void)closure;
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError, "Cannot delete y");
@@ -90,15 +84,13 @@ SkrashSprite_set_y(SkrashSprite *self, PyObject *value, void *closure)
 }
 
 static PyObject *
-SkrashSprite_get_direction(SkrashSprite *self, void *closure)
-{
+SkrashSprite_get_direction(SkrashSprite *self, void *closure) {
     (void)closure;
     return PyFloat_FromDouble(self->target->direction);
 }
 
 static int
-SkrashSprite_set_direction(SkrashSprite *self, PyObject *value, void *closure)
-{
+SkrashSprite_set_direction(SkrashSprite *self, PyObject *value, void *closure) {
     (void)closure;
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError, "Cannot delete direction");
@@ -113,8 +105,7 @@ SkrashSprite_set_direction(SkrashSprite *self, PyObject *value, void *closure)
 /* --- Methodes --- */
 
 static PyObject *
-SkrashSprite_move(SkrashSprite *self, PyObject *args)
-{
+SkrashSprite_move(SkrashSprite *self, PyObject *args) {
     double steps;
     if (!PyArg_ParseTuple(args, "d", &steps))
         return NULL;
@@ -127,8 +118,7 @@ SkrashSprite_move(SkrashSprite *self, PyObject *args)
 }
 
 static PyObject *
-SkrashSprite_say(SkrashSprite *self, PyObject *args)
-{
+SkrashSprite_say(SkrashSprite *self, PyObject *args) {
     const char *msg;
     if (!PyArg_ParseTuple(args, "s", &msg))
         return NULL;
@@ -177,21 +167,18 @@ typedef struct {
 } SkrashVariable;
 
 static void
-SkrashVariable_dealloc(SkrashVariable *self)
-{
+SkrashVariable_dealloc(SkrashVariable *self) {
     Py_TYPE(self)->tp_free((PyObject *)self);
 }
 
 static PyObject *
-SkrashVariable_get_value(SkrashVariable *self, void *closure)
-{
+SkrashVariable_get_value(SkrashVariable *self, void *closure) {
     (void)closure;
     return PyFloat_FromDouble(self->variable->value);
 }
 
 static int
-SkrashVariable_set_value(SkrashVariable *self, PyObject *value, void *closure)
-{
+SkrashVariable_set_value(SkrashVariable *self, PyObject *value, void *closure) {
     (void)closure;
     if (value == NULL) {
         PyErr_SetString(PyExc_TypeError, "Cannot delete variable value");
@@ -204,8 +191,7 @@ SkrashVariable_set_value(SkrashVariable *self, PyObject *value, void *closure)
 }
 
 static PyObject *
-SkrashVariable_get_name(SkrashVariable *self, void *closure)
-{
+SkrashVariable_get_name(SkrashVariable *self, void *closure) {
     (void)closure;
     return PyUnicode_FromString(self->variable->name ? self->variable->name : "");
 }
@@ -235,8 +221,7 @@ static PyTypeObject SkrashVariableType = {
 static PyTypeObject SkrashProjectType;
 
 static PyObject *
-skrash_load(PyObject *self, PyObject *args)
-{
+skrash_load(PyObject *self, PyObject *args) {
     const char *path;
     SB3Project *project;
     SkrashProject *object;
@@ -273,8 +258,7 @@ skrash_load(PyObject *self, PyObject *args)
 }
 
 static PyObject *
-SkrashProject_start(SkrashProject *self, PyObject *Py_UNUSED(args))
-{
+SkrashProject_start(SkrashProject *self, PyObject *Py_UNUSED(args)) {
     if (self->project == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Project is not loaded.");
         return NULL;
@@ -289,8 +273,7 @@ SkrashProject_start(SkrashProject *self, PyObject *Py_UNUSED(args))
 }
 
 static PyObject *
-SkrashProject_step(SkrashProject *self, PyObject *Py_UNUSED(args))
-{
+SkrashProject_step(SkrashProject *self, PyObject *Py_UNUSED(args)) {
     if (self->project == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Project is not loaded.");
         return NULL;
@@ -303,8 +286,7 @@ SkrashProject_step(SkrashProject *self, PyObject *Py_UNUSED(args))
 }
 
 static PyObject *
-SkrashProject_run(SkrashProject *self, PyObject *Py_UNUSED(args))
-{
+SkrashProject_run(SkrashProject *self, PyObject *Py_UNUSED(args)) {
     if (self->project == NULL) {
         PyErr_SetString(PyExc_RuntimeError, "Project is not loaded.");
         return NULL;
@@ -337,8 +319,7 @@ SkrashProject_run(SkrashProject *self, PyObject *Py_UNUSED(args))
 }
 
 static PyObject *
-SkrashProject_get_sprite(SkrashProject *self, PyObject *args)
-{
+SkrashProject_get_sprite(SkrashProject *self, PyObject *args) {
     const char *name;
     if (!PyArg_ParseTuple(args, "s", &name))
         return NULL;
@@ -358,13 +339,12 @@ SkrashProject_get_sprite(SkrashProject *self, PyObject *args)
 }
 
 static PyObject *
-SkrashProject_get_variable(SkrashProject *self, PyObject *args)
-{
+SkrashProject_get_variable(SkrashProject *self, PyObject *args) {
     const char *name;
     if (!PyArg_ParseTuple(args, "s", &name))
         return NULL;
 
-    /* On cherche dans le stage (variables globales) 
+    /* On cherche dans le stage (variables globales)
        puis dans tous les sprites (variables locales) */
     for (size_t i = 0; i < self->project->target_count; ++i) {
         SB3Target *t = &self->project->targets[i];
@@ -388,14 +368,12 @@ SkrashProject_get_variable(SkrashProject *self, PyObject *args)
 /* ------------------------------------------------------------------ */
 
 static PyObject *
-skrash_get_sprite(PyObject *self, PyObject *args)
-{
+skrash_get_sprite(PyObject *self, PyObject *args) {
     PyObject *project_obj;
-    const char *name;
 
     (void)self;
 
-    if (!PyArg_ParseTuple(args, "Os", &project_obj, &name))
+    if (!PyArg_ParseTuple(args, "O", &project_obj))
         return NULL;
 
     if (!PyObject_TypeCheck(project_obj, &SkrashProjectType)) {
@@ -404,12 +382,18 @@ skrash_get_sprite(PyObject *self, PyObject *args)
         return NULL;
     }
 
-    return SkrashProject_get_sprite((SkrashProject *)project_obj, args + 0 * 0 == NULL ? NULL : NULL);
+    /* Retire le premier argument (le Project), laisse ("nom",) */
+    PyObject *rest = PyTuple_GetSlice(args, 1, PyTuple_GET_SIZE(args));
+    if (rest == NULL)
+        return NULL;
+
+    PyObject *result = SkrashProject_get_sprite((SkrashProject *)project_obj, rest);
+    Py_DECREF(rest);
+    return result;
 }
 
 static PyObject *
-skrash_get_variable(PyObject *self, PyObject *args)
-{
+skrash_get_variable(PyObject *self, PyObject *args) {
     PyObject *project_obj;
     const char *name;
 
@@ -486,8 +470,7 @@ static struct PyModuleDef Skrash_module = {
 };
 
 PyMODINIT_FUNC
-PyInit__core(void)
-{
+PyInit__core(void) {
     PyObject *module;
 
     if (PyType_Ready(&SkrashProjectType) < 0)

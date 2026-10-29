@@ -7,15 +7,13 @@
 #include "../thread.h"
 #define PI 3.14159265358979323846
 
-static double scratch_round(double x)
-{
+static double scratch_round(double x) {
     return (x >= 0.0) ? floor(x + 0.5) : ceil(x - 0.5);
 }
 
 int sb3_operator_evaluate(SB3Thread *thread,
                           const SB3Block *block,
-                          double *out)
-{
+                          double *out) {
     if (thread == NULL || block == NULL || out == NULL)
         return 0;
 
@@ -57,7 +55,10 @@ int sb3_operator_evaluate(SB3Thread *thread,
         double a = 0.0, b = 0.0;
         if (!sb3_input_evaluate(thread, &block->input_num1, &a)) return 0;
         if (!sb3_input_evaluate(thread, &block->input_num2, &b)) return 0;
-        if (b == 0.0) { *out = 0.0; return 1; }
+        if (b == 0.0) {
+            *out = 0.0;
+            return 1;
+        }
         {
             double r = fmod(a, b);
             if (r != 0.0 && ((r < 0.0) != (b < 0.0))) r += b;
@@ -140,30 +141,30 @@ int sb3_operator_evaluate(SB3Thread *thread,
     }
 
     case SB3_BLOCK_KIND_OPERATOR_MATHOP: {
-    double a = 0.0;
-    if (!sb3_input_evaluate(thread, &block->input_num1, &a))
-        return 0;
+        double a = 0.0;
+        if (!sb3_input_evaluate(thread, &block->input_num1, &a))
+            return 0;
 
-    const char *op = block->message ? block->message : "abs";
-    double r = 0.0;
+        const char *op = block->message ? block->message : "abs";
+        double r = 0.0;
 
-    if      (strcmp(op, "abs")     == 0) r = fabs(a);
-    else if (strcmp(op, "floor")   == 0) r = floor(a);
-    else if (strcmp(op, "ceiling") == 0) r = ceil(a);
-    else if (strcmp(op, "sqrt")    == 0) r = sqrt(a);
-    else if (strcmp(op, "sin")     == 0) r = sin(a * PI / 180.0);
-    else if (strcmp(op, "cos")     == 0) r = cos(a * PI / 180.0);
-    else if (strcmp(op, "tan")     == 0) r = tan(a * PI / 180.0);
-    else if (strcmp(op, "asin")    == 0) r = asin(a) * 180.0 / PI;
-    else if (strcmp(op, "acos")    == 0) r = acos(a) * 180.0 / PI;
-    else if (strcmp(op, "atan")    == 0) r = atan(a) * 180.0 / PI;
-    else if (strcmp(op, "ln")      == 0) r = log(a);
-    else if (strcmp(op, "log")     == 0) r = log10(a);
-    else if (strcmp(op, "e ^")     == 0) r = exp(a);
-    else if (strcmp(op, "10 ^")    == 0) r = pow(10.0, a);
+        if      (strcmp(op, "abs")     == 0) r = fabs(a);
+        else if (strcmp(op, "floor")   == 0) r = floor(a);
+        else if (strcmp(op, "ceiling") == 0) r = ceil(a);
+        else if (strcmp(op, "sqrt")    == 0) r = sqrt(a);
+        else if (strcmp(op, "sin")     == 0) r = sin(a * PI / 180.0);
+        else if (strcmp(op, "cos")     == 0) r = cos(a * PI / 180.0);
+        else if (strcmp(op, "tan")     == 0) r = tan(a * PI / 180.0);
+        else if (strcmp(op, "asin")    == 0) r = asin(a) * 180.0 / PI;
+        else if (strcmp(op, "acos")    == 0) r = acos(a) * 180.0 / PI;
+        else if (strcmp(op, "atan")    == 0) r = atan(a) * 180.0 / PI;
+        else if (strcmp(op, "ln")      == 0) r = log(a);
+        else if (strcmp(op, "log")     == 0) r = log10(a);
+        else if (strcmp(op, "e ^")     == 0) r = exp(a);
+        else if (strcmp(op, "10 ^")    == 0) r = pow(10.0, a);
 
-    *out = r;
-    return 1; 
+        *out = r;
+        return 1;
     }
 
     default:
@@ -173,8 +174,7 @@ int sb3_operator_evaluate(SB3Thread *thread,
 
 int sb3_operator_evaluate_string(SB3Thread *thread,
                                  const SB3Block *block,
-                                 char *out, size_t out_size)
-{
+                                 char *out, size_t out_size) {
     if (thread == NULL || block == NULL || out == NULL || out_size == 0)
         return 0;
 
@@ -210,21 +210,21 @@ int sb3_operator_evaluate_string(SB3Thread *thread,
         return 1;
     }
     case SB3_BLOCK_KIND_OPERATOR_LETTER_OF: {
-    double idx_d = 0.0;
-    char s[256];
-    if (!sb3_input_evaluate(thread, &block->input_num1, &idx_d))
-        return 0;
-    if (!sb3_input_evaluate_string(thread, &block->input_num2, s, sizeof(s)))
-        return 0;
+        double idx_d = 0.0;
+        char s[256];
+        if (!sb3_input_evaluate(thread, &block->input_num1, &idx_d))
+            return 0;
+        if (!sb3_input_evaluate_string(thread, &block->input_num2, s, sizeof(s)))
+            return 0;
 
-    int idx = (int)idx_d;
-    if (idx < 1 || idx > (int)strlen(s)) {
-        out[0] = '\0';
+        int idx = (int)idx_d;
+        if (idx < 1 || idx > (int)strlen(s)) {
+            out[0] = '\0';
+            return 1;
+        }
+        out[0] = s[idx - 1];
+        out[1] = '\0';
         return 1;
-    }
-    out[0] = s[idx - 1];
-    out[1] = '\0';
-    return 1;
     }
 
 

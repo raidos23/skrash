@@ -5,8 +5,7 @@
 #include "../vm/_native/project/sb3.h"
 #include "../vm/_native/runtime/runtime.h"
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     if (argc < 2) {
         fprintf(stderr, "usage: %s <project.sb3>\n", argv[0]);
         return 1;
@@ -20,7 +19,7 @@ int main(int argc, char **argv)
 
     SB3Runtime runtime;
     if (!sb3_runtime_init(&runtime, project) ||
-        !sb3_runtime_start(&runtime)) {
+            !sb3_runtime_start(&runtime)) {
         fprintf(stderr, "error: failed to start runtime\n");
         sb3_project_free(project);
         return 1;

@@ -113,6 +113,7 @@ typedef struct SB3Block {
     int top_level;
     double x;
     double y;
+    int greater_than_latched;  
     SB3BlockKind kind;
     double motion_steps;
     int has_motion_steps;

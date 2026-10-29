@@ -43,8 +43,7 @@ struct JsonValue {
     } as;
 };
 
-char *sb3_strdup_local(const char *text)
-{
+char *sb3_strdup_local(const char *text) {
     size_t length;
     char *copy;
 
@@ -60,8 +59,7 @@ char *sb3_strdup_local(const char *text)
     return copy;
 }
 
-static void *sb3_calloc(size_t count, size_t size)
-{
+static void *sb3_calloc(size_t count, size_t size) {
     if (count == 0 || size == 0)
         return calloc(count, size);
 
@@ -71,8 +69,7 @@ static void *sb3_calloc(size_t count, size_t size)
     return calloc(count, size);
 }
 
-static void sb3_input_init(SB3Input *in)
-{
+static void sb3_input_init(SB3Input *in) {
     if (in == NULL)
         return;
 
@@ -82,8 +79,7 @@ static void sb3_input_init(SB3Input *in)
     in->block_id = NULL;
 }
 
-static void sb3_input_free(SB3Input *in)
-{
+static void sb3_input_free(SB3Input *in) {
     if (in == NULL)
         return;
 
@@ -92,8 +88,7 @@ static void sb3_input_free(SB3Input *in)
     sb3_input_init(in);
 }
 
-static void sb3_block_init(SB3Block *block)
-{
+static void sb3_block_init(SB3Block *block) {
     if (block == NULL)
         return;
 
@@ -125,6 +120,7 @@ static void sb3_block_init(SB3Block *block)
     block->broadcast_name = NULL;
     block->event_option = NULL;
     block->stop_option = NULL;
+    block->greater_than_latched = 0;
 
     sb3_input_init(&block->input_steps);
     sb3_input_init(&block->input_degrees);
@@ -142,8 +138,7 @@ static void sb3_block_init(SB3Block *block)
 
 }
 
-static void sb3_target_init(SB3Target *target)
-{
+static void sb3_target_init(SB3Target *target) {
     if (target == NULL)
         return;
 
@@ -166,8 +161,7 @@ static void sb3_target_init(SB3Target *target)
     target->is_clone = 0;
 }
 
-static void sb3_project_init(SB3Project *project)
-{
+static void sb3_project_init(SB3Project *project) {
     if (project == NULL)
         return;
 
@@ -179,8 +173,7 @@ static void sb3_project_init(SB3Project *project)
     project->target_count = 0;
 }
 
-static JsonValue *json_new(JsonType type)
-{
+static JsonValue *json_new(JsonType type) {
     JsonValue *value = calloc(1, sizeof(*value));
 
     if (value != NULL)
@@ -189,16 +182,14 @@ static JsonValue *json_new(JsonType type)
     return value;
 }
 
-static const char *json_skip_ws(const char *cursor, const char *end)
-{
+static const char *json_skip_ws(const char *cursor, const char *end) {
     while (cursor < end && isspace((unsigned char)*cursor))
         ++cursor;
 
     return cursor;
 }
 
-static int json_append_char(char **buffer, size_t *length, size_t *capacity, char ch)
-{
+static int json_append_char(char **buffer, size_t *length, size_t *capacity, char ch) {
     char *next;
 
     if (*length + 1 >= *capacity) {
@@ -217,8 +208,7 @@ static int json_append_char(char **buffer, size_t *length, size_t *capacity, cha
     return 1;
 }
 
-static int json_hex_value(char ch)
-{
+static int json_hex_value(char ch) {
     if (ch >= '0' && ch <= '9')
         return ch - '0';
     if (ch >= 'a' && ch <= 'f')
@@ -228,8 +218,7 @@ static int json_hex_value(char ch)
     return -1;
 }
 
-static const char *json_parse_string_raw(const char *cursor, const char *end, char **out)
-{
+static const char *json_parse_string_raw(const char *cursor, const char *end, char **out) {
     char *buffer = NULL;
     size_t length = 0;
     size_t capacity = 0;
@@ -312,8 +301,7 @@ static const char *json_parse_string_raw(const char *cursor, const char *end, ch
 static JsonValue *json_parse_value(const char **cursor, const char *end);
 static void json_value_free(JsonValue *value);
 
-static JsonValue *json_parse_array(const char **cursor, const char *end)
-{
+static JsonValue *json_parse_array(const char **cursor, const char *end) {
     JsonValue *value = json_new(JSON_ARRAY);
     const char *p;
 
@@ -371,8 +359,7 @@ static JsonValue *json_parse_array(const char **cursor, const char *end)
     return NULL;
 }
 
-static JsonValue *json_parse_object(const char **cursor, const char *end)
-{
+static JsonValue *json_parse_object(const char **cursor, const char *end) {
     JsonValue *value = json_new(JSON_OBJECT);
     const char *p;
 
@@ -450,8 +437,7 @@ static JsonValue *json_parse_object(const char **cursor, const char *end)
     return NULL;
 }
 
-static JsonValue *json_parse_value(const char **cursor, const char *end)
-{
+static JsonValue *json_parse_value(const char **cursor, const char *end) {
     const char *p = json_skip_ws(*cursor, end);
     JsonValue *value = NULL;
 
@@ -459,24 +445,23 @@ static JsonValue *json_parse_value(const char **cursor, const char *end)
         return NULL;
 
     switch (*p) {
-    case '"':
-        {
-            char *string = NULL;
+    case '"': {
+        char *string = NULL;
 
-            p = json_parse_string_raw(p, end, &string);
-            if (p == NULL)
-                return NULL;
+        p = json_parse_string_raw(p, end, &string);
+        if (p == NULL)
+            return NULL;
 
-            value = json_new(JSON_STRING);
-            if (value == NULL) {
-                free(string);
-                return NULL;
-            }
-
-            value->as.string = string;
-            *cursor = p;
-            return value;
+        value = json_new(JSON_STRING);
+        if (value == NULL) {
+            free(string);
+            return NULL;
         }
+
+        value->as.string = string;
+        *cursor = p;
+        return value;
+    }
     case '{':
         value = json_parse_object(&p, end);
         if (value != NULL)
@@ -516,29 +501,27 @@ static JsonValue *json_parse_value(const char **cursor, const char *end)
             return value;
         }
         return NULL;
-    default:
-        {
-            char *tail = NULL;
-            double number;
+    default: {
+        char *tail = NULL;
+        double number;
 
-            errno = 0;
-            number = strtod(p, &tail);
-            if (tail == p || errno == ERANGE)
-                return NULL;
+        errno = 0;
+        number = strtod(p, &tail);
+        if (tail == p || errno == ERANGE)
+            return NULL;
 
-            value = json_new(JSON_NUMBER);
-            if (value == NULL)
-                return NULL;
+        value = json_new(JSON_NUMBER);
+        if (value == NULL)
+            return NULL;
 
-            value->as.number = number;
-            *cursor = tail;
-            return value;
-        }
+        value->as.number = number;
+        *cursor = tail;
+        return value;
+    }
     }
 }
 
-static void json_value_free(JsonValue *value)
-{
+static void json_value_free(JsonValue *value) {
     size_t index;
 
     if (value == NULL)
@@ -569,8 +552,7 @@ static void json_value_free(JsonValue *value)
     free(value);
 }
 
-static const JsonValue *json_object_get(const JsonValue *object, const char *key)
-{
+static const JsonValue *json_object_get(const JsonValue *object, const char *key) {
     size_t index;
 
     if (object == NULL || object->type != JSON_OBJECT || key == NULL)
@@ -584,8 +566,7 @@ static const JsonValue *json_object_get(const JsonValue *object, const char *key
     return NULL;
 }
 
-static char *sb3_read_field_array0(const JsonValue *block_value, const char *name)
-{
+static char *sb3_read_field_array0(const JsonValue *block_value, const char *name) {
     const JsonValue *fields = json_object_get(block_value, "fields");
     const JsonValue *f = fields ? json_object_get(fields, name) : NULL;
     if (!f || f->type != JSON_ARRAY || f->as.array.count < 1) return NULL;
@@ -594,8 +575,7 @@ static char *sb3_read_field_array0(const JsonValue *block_value, const char *nam
     return NULL;
 }
 
-static char *sb3_read_field_string(const JsonValue *block_value, const char *name)
-{
+static char *sb3_read_field_string(const JsonValue *block_value, const char *name) {
     const JsonValue *fields = json_object_get(block_value, "fields");
     const JsonValue *field = fields ? json_object_get(fields, name) : NULL;
     const JsonValue *value;
@@ -611,8 +591,7 @@ static char *sb3_read_field_string(const JsonValue *block_value, const char *nam
 }
 
 
-static int json_get_bool(const JsonValue *object, const char *key, int default_value)
-{
+static int json_get_bool(const JsonValue *object, const char *key, int default_value) {
     const JsonValue *value = json_object_get(object, key);
 
     if (value == NULL)
@@ -624,8 +603,7 @@ static int json_get_bool(const JsonValue *object, const char *key, int default_v
     return default_value;
 }
 
-static double json_get_number(const JsonValue *object, const char *key, double default_value)
-{
+static double json_get_number(const JsonValue *object, const char *key, double default_value) {
     const JsonValue *value = json_object_get(object, key);
 
     if (value == NULL)
@@ -637,8 +615,7 @@ static double json_get_number(const JsonValue *object, const char *key, double d
     return default_value;
 }
 
-static char *json_get_string_dup(const JsonValue *object, const char *key)
-{
+static char *json_get_string_dup(const JsonValue *object, const char *key) {
     const JsonValue *value = json_object_get(object, key);
 
     if (value == NULL || value->type != JSON_STRING)
@@ -647,8 +624,7 @@ static char *json_get_string_dup(const JsonValue *object, const char *key)
     return sb3_strdup_local(value->as.string);
 }
 
-static void sb3_block_free(SB3Block *block)
-{
+static void sb3_block_free(SB3Block *block) {
     if (block == NULL)
         return;
 
@@ -682,24 +658,23 @@ static void sb3_block_free(SB3Block *block)
     sb3_block_init(block);
 }
 
-static void sb3_target_clear(SB3Target *target)
-{
+static void sb3_target_clear(SB3Target *target) {
     size_t index;
 
     if (target == NULL)
         return;
 
     for (index = 0; index < target->variable_count; ++index) {
-    free(target->variables[index].id);
-    free(target->variables[index].name);
+        free(target->variables[index].id);
+        free(target->variables[index].name);
     }
     free(target->variables);
     for (index = 0; index < target->list_count; ++index) {
-    free(target->lists[index].id);
-    free(target->lists[index].name);
-    for (size_t j = 0; j < target->lists[index].item_count; ++j)
-        free(target->lists[index].items[j]);
-    free(target->lists[index].items);  
+        free(target->lists[index].id);
+        free(target->lists[index].name);
+        for (size_t j = 0; j < target->lists[index].item_count; ++j)
+            free(target->lists[index].items[j]);
+        free(target->lists[index].items);
     }
     free(target->lists);
 
@@ -709,10 +684,10 @@ static void sb3_target_clear(SB3Target *target)
         sb3_block_free(&target->blocks[index]);
 
     for (index = 0; index < target->costume_count; ++index) {
-    free(target->costumes[index].name);
-    free(target->costumes[index].asset_id);
-    free(target->costumes[index].md5ext);
-    free(target->costumes[index].data_format);
+        free(target->costumes[index].name);
+        free(target->costumes[index].asset_id);
+        free(target->costumes[index].md5ext);
+        free(target->costumes[index].data_format);
     }
     free(target->costumes);
 
@@ -720,8 +695,7 @@ static void sb3_target_clear(SB3Target *target)
     sb3_target_init(target);
 }
 
-static void sb3_project_clear_assets(SB3Project *project)
-{
+static void sb3_project_clear_assets(SB3Project *project) {
     size_t index;
 
     if (project == NULL)
@@ -735,8 +709,7 @@ static void sb3_project_clear_assets(SB3Project *project)
     project->asset_count = 0;
 }
 
-static void sb3_project_clear_targets(SB3Project *project)
-{
+static void sb3_project_clear_targets(SB3Project *project) {
     size_t index;
 
     if (project == NULL)
@@ -750,8 +723,7 @@ static void sb3_project_clear_targets(SB3Project *project)
     project->target_count = 0;
 }
 
-static void sb3_project_clear(SB3Project *project)
-{
+static void sb3_project_clear(SB3Project *project) {
     if (project == NULL)
         return;
 
@@ -763,8 +735,7 @@ static void sb3_project_clear(SB3Project *project)
     project->project_json_size = 0;
 }
 
-static int sb3_load_project_json(zip_t *archive, SB3Project *project)
-{
+static int sb3_load_project_json(zip_t *archive, SB3Project *project) {
     zip_stat_t stat;
     zip_file_t *file;
     zip_int64_t bytes_read;
@@ -797,8 +768,7 @@ static int sb3_load_project_json(zip_t *archive, SB3Project *project)
     return 1;
 }
 
-static char *sb3_dup_asset_id_from_name(const char *file_name)
-{
+static char *sb3_dup_asset_id_from_name(const char *file_name) {
     const char *dot;
     size_t length;
     char *asset_id;
@@ -820,8 +790,7 @@ static char *sb3_dup_asset_id_from_name(const char *file_name)
     return asset_id;
 }
 
-static int sb3_load_assets(zip_t *archive, SB3Project *project)
-{
+static int sb3_load_assets(zip_t *archive, SB3Project *project) {
     zip_int64_t entry_count;
     zip_uint64_t index;
     SB3Asset *assets;
@@ -906,8 +875,7 @@ static int sb3_load_assets(zip_t *archive, SB3Project *project)
     return 1;
 }
 
-SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
-{
+SB3BlockKind sb3_block_kind_from_opcode(const char *opcode) {
     if (opcode == NULL)
         return SB3_BLOCK_KIND_UNKNOWN;
 
@@ -925,48 +893,48 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
 
     if (strcmp(opcode, "control_repeat") == 0)
         return SB3_BLOCK_KIND_CONTROL_REPEAT;
-    
+
     if (strcmp(opcode, "looks_say") == 0)
         return SB3_BLOCK_KIND_LOOKS_SAY;
 
     if (strcmp(opcode, "control_forever") == 0)
-       return SB3_BLOCK_KIND_CONTROL_FOREVER;
+        return SB3_BLOCK_KIND_CONTROL_FOREVER;
 
     if (strcmp(opcode, "motion_gotoxy") == 0)
-       return SB3_BLOCK_KIND_MOTION_GOTOXY;
-    
+        return SB3_BLOCK_KIND_MOTION_GOTOXY;
+
     if (strcmp(opcode, "motion_setx") == 0)
-       return SB3_BLOCK_KIND_MOTION_SETX;
-    
+        return SB3_BLOCK_KIND_MOTION_SETX;
+
     if (strcmp(opcode, "motion_sety") == 0)
-       return SB3_BLOCK_KIND_MOTION_SETY;
+        return SB3_BLOCK_KIND_MOTION_SETY;
 
     if (strcmp(opcode, "control_wait") == 0)
         return SB3_BLOCK_KIND_CONTROL_WAIT;
 
-    if (strcmp(opcode, "motion_pointindirection") == 0)  
-        return SB3_BLOCK_KIND_MOTION_POINTINDIRECTION;  
-    
-    if (strcmp(opcode, "motion_changexby") == 0)  
-        return SB3_BLOCK_KIND_MOTION_CHANGEXBY; 
+    if (strcmp(opcode, "motion_pointindirection") == 0)
+        return SB3_BLOCK_KIND_MOTION_POINTINDIRECTION;
 
-    if (strcmp(opcode, "motion_changeyby") == 0)  
-        return SB3_BLOCK_KIND_MOTION_CHANGEYBY;  
+    if (strcmp(opcode, "motion_changexby") == 0)
+        return SB3_BLOCK_KIND_MOTION_CHANGEXBY;
 
-    if (strcmp(opcode, "looks_show") == 0)  
-    return SB3_BLOCK_KIND_LOOKS_SHOW;  
-    
-    if (strcmp(opcode, "looks_hide") == 0)  
-    return SB3_BLOCK_KIND_LOOKS_HIDE;  
-    
-    if (strcmp(opcode, "looks_setsizeto") == 0)  
-    return SB3_BLOCK_KIND_LOOKS_SETSIZETO;  
+    if (strcmp(opcode, "motion_changeyby") == 0)
+        return SB3_BLOCK_KIND_MOTION_CHANGEYBY;
 
-    if (strcmp(opcode, "looks_changesizeby") == 0)  
-    return SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY;  
-    
-    if (strcmp(opcode, "looks_think") == 0)  
-    return SB3_BLOCK_KIND_LOOKS_THINK;  
+    if (strcmp(opcode, "looks_show") == 0)
+        return SB3_BLOCK_KIND_LOOKS_SHOW;
+
+    if (strcmp(opcode, "looks_hide") == 0)
+        return SB3_BLOCK_KIND_LOOKS_HIDE;
+
+    if (strcmp(opcode, "looks_setsizeto") == 0)
+        return SB3_BLOCK_KIND_LOOKS_SETSIZETO;
+
+    if (strcmp(opcode, "looks_changesizeby") == 0)
+        return SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY;
+
+    if (strcmp(opcode, "looks_think") == 0)
+        return SB3_BLOCK_KIND_LOOKS_THINK;
 
     if (strcmp(opcode, "operator_add")      == 0) return SB3_BLOCK_KIND_OPERATOR_ADD;
     if (strcmp(opcode, "operator_subtract") == 0) return SB3_BLOCK_KIND_OPERATOR_SUBTRACT;
@@ -1038,11 +1006,10 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     return SB3_BLOCK_KIND_UNKNOWN;
 }
 
-static double sb3_shadow_number(const JsonValue *shadow)
-{
+static double sb3_shadow_number(const JsonValue *shadow) {
     if (shadow == NULL ||
-        shadow->type != JSON_ARRAY ||
-        shadow->as.array.count < 2)
+            shadow->type != JSON_ARRAY ||
+            shadow->as.array.count < 2)
         return 0.0;
 
     const JsonValue *v = shadow->as.array.items[1];
@@ -1052,12 +1019,11 @@ static double sb3_shadow_number(const JsonValue *shadow)
     return 0.0;
 }
 
-static int sb3_parse_input(const JsonValue *input, SB3Input *out)
-{
+static int sb3_parse_input(const JsonValue *input, SB3Input *out) {
     if (input == NULL ||
-        input->type != JSON_ARRAY ||
-        input->as.array.count < 2 ||
-        out == NULL)
+            input->type != JSON_ARRAY ||
+            input->as.array.count < 2 ||
+            out == NULL)
         return 0;
 
     const JsonValue *tag  = input->as.array.items[0];
@@ -1068,18 +1034,18 @@ static int sb3_parse_input(const JsonValue *input, SB3Input *out)
     int kind = (int)tag->as.number;
 
     if (kind == 1) {
-    out->kind = SB3_INPUT_KIND_LITERAL;
-    out->literal_number = sb3_shadow_number(body);
+        out->kind = SB3_INPUT_KIND_LITERAL;
+        out->literal_number = sb3_shadow_number(body);
 
-    /* Cas [1, [10, "poire"]] : lire la string aussi */
-    if (body != NULL && body->type == JSON_ARRAY &&
-        body->as.array.count >= 2) {
-        const JsonValue *inner = body->as.array.items[1];
-        if (inner != NULL && inner->type == JSON_STRING)
-            out->literal_string = sb3_strdup_local(inner->as.string);
+        /* Cas [1, [10, "poire"]] : lire la string aussi */
+        if (body != NULL && body->type == JSON_ARRAY &&
+                body->as.array.count >= 2) {
+            const JsonValue *inner = body->as.array.items[1];
+            if (inner != NULL && inner->type == JSON_STRING)
+                out->literal_string = sb3_strdup_local(inner->as.string);
+        }
+        return 1;
     }
-    return 1;
-}
 
     if (kind == 2) {
         if (body == NULL || body->type != JSON_STRING) return 0;
@@ -1087,53 +1053,53 @@ static int sb3_parse_input(const JsonValue *input, SB3Input *out)
         out->block_id = sb3_strdup_local(body->as.string);
         return out->block_id != NULL;
     }
-    
+
     if (kind == 3) {
-    if (body == NULL) return 0;
+        if (body == NULL) return 0;
 
-    /* Cas 1 : body est une string = block_id (format classique) */
-    if (body->type == JSON_STRING) {
-        out->kind = SB3_INPUT_KIND_BLOCK;
-        out->block_id = sb3_strdup_local(body->as.string);
-        if (out->block_id == NULL) return 0;
+        /* Cas 1 : body est une string = block_id (format classique) */
+        if (body->type == JSON_STRING) {
+            out->kind = SB3_INPUT_KIND_BLOCK;
+            out->block_id = sb3_strdup_local(body->as.string);
+            if (out->block_id == NULL) return 0;
 
-        if (input->as.array.count >= 3) {
-            const JsonValue *shadow = input->as.array.items[2];
-            out->literal_number = sb3_shadow_number(shadow);
-            if (shadow != NULL && shadow->type == JSON_ARRAY &&
-                shadow->as.array.count >= 2) {
-                const JsonValue *inner = shadow->as.array.items[1];
-                if (inner != NULL && inner->type == JSON_STRING)
-                    out->literal_string = sb3_strdup_local(inner->as.string);
+            if (input->as.array.count >= 3) {
+                const JsonValue *shadow = input->as.array.items[2];
+                out->literal_number = sb3_shadow_number(shadow);
+                if (shadow != NULL && shadow->type == JSON_ARRAY &&
+                        shadow->as.array.count >= 2) {
+                    const JsonValue *inner = shadow->as.array.items[1];
+                    if (inner != NULL && inner->type == JSON_STRING)
+                        out->literal_string = sb3_strdup_local(inner->as.string);
+                }
             }
+            return 1;
         }
-        return 1;
-    }
 
-    /* Cas 2 : body est un tableau [12, "nom", "id"] = variable directe */
-    if (body->type == JSON_ARRAY && body->as.array.count >= 3) {
-        const JsonValue *tag = body->as.array.items[0];
-        if (tag == NULL || tag->type != JSON_NUMBER ||
-            (int)tag->as.number != 12)
-            return 0;
+        /* Cas 2 : body est un tableau [12, "nom", "id"] = variable directe */
+        if (body->type == JSON_ARRAY && body->as.array.count >= 3) {
+            const JsonValue *tag = body->as.array.items[0];
+            if (tag == NULL || tag->type != JSON_NUMBER ||
+                    (int)tag->as.number != 12)
+                return 0;
 
-        const JsonValue *name_j = body->as.array.items[1];
-        const JsonValue *id_j   = body->as.array.items[2];
-        if (name_j == NULL || name_j->type != JSON_STRING)
-            return 0;
+            const JsonValue *name_j = body->as.array.items[1];
+            const JsonValue *id_j   = body->as.array.items[2];
+            if (name_j == NULL || name_j->type != JSON_STRING)
+                return 0;
 
-        out->kind = SB3_INPUT_KIND_LITERAL;
-        out->literal_string = sb3_strdup_local(name_j->as.string);
-        if (id_j != NULL && id_j->type == JSON_STRING)
-            out->block_id = sb3_strdup_local(id_j->as.string);
+            out->kind = SB3_INPUT_KIND_LITERAL;
+            out->literal_string = sb3_strdup_local(name_j->as.string);
+            if (id_j != NULL && id_j->type == JSON_STRING)
+                out->block_id = sb3_strdup_local(id_j->as.string);
 
-        /* shadow de fallback */
-        if (input->as.array.count >= 3) {
-            const JsonValue *shadow = input->as.array.items[2];
-            out->literal_number = sb3_shadow_number(shadow);
+            /* shadow de fallback */
+            if (input->as.array.count >= 3) {
+                const JsonValue *shadow = input->as.array.items[2];
+                out->literal_number = sb3_shadow_number(shadow);
+            }
+            return 1;
         }
-        return 1;
-    }
     }
     return 0;
 }
@@ -1141,15 +1107,13 @@ static int sb3_parse_input(const JsonValue *input, SB3Input *out)
 static int sb3_parse_input_at(
     const JsonValue *block_value,
     const char *input_name,
-    SB3Input *out)
-{
+    SB3Input *out) {
     const JsonValue *inputs = json_object_get(block_value, "inputs");
     const JsonValue *in = inputs ? json_object_get(inputs, input_name) : NULL;
     return sb3_parse_input(in, out);
 }
 
-static double sb3_read_steps_value(const JsonValue *block_value)
-{
+static double sb3_read_steps_value(const JsonValue *block_value) {
     const JsonValue *inputs;
     const JsonValue *steps;
     const JsonValue *literal;
@@ -1182,8 +1146,7 @@ static double sb3_read_steps_value(const JsonValue *block_value)
 static double sb3_read_coordinate_value(
     const JsonValue *block_value,
     const char *input_name
-)
-{
+) {
     const JsonValue *inputs;
     const JsonValue *input;
     const JsonValue *literal;
@@ -1196,8 +1159,8 @@ static double sb3_read_coordinate_value(
     input = json_object_get(inputs, input_name);
 
     if (input == NULL ||
-        input->type != JSON_ARRAY ||
-        input->as.array.count < 2)
+            input->type != JSON_ARRAY ||
+            input->as.array.count < 2)
         return 0.0;
 
     literal = input->as.array.items[1];
@@ -1234,8 +1197,7 @@ static double sb3_read_coordinate_value(
     return 0.0;
 }
 
-static double sb3_read_turn_degrees_value(const JsonValue *block_value)
-{
+static double sb3_read_turn_degrees_value(const JsonValue *block_value) {
     const JsonValue *inputs;
     const JsonValue *degrees;
     const JsonValue *literal;
@@ -1248,15 +1210,15 @@ static double sb3_read_turn_degrees_value(const JsonValue *block_value)
     degrees = json_object_get(inputs, "DEGREES");
 
     if (degrees == NULL ||
-        degrees->type != JSON_ARRAY ||
-        degrees->as.array.count < 2)
+            degrees->type != JSON_ARRAY ||
+            degrees->as.array.count < 2)
         return 0.0;
 
     literal = degrees->as.array.items[1];
 
     if (literal == NULL ||
-        literal->type != JSON_ARRAY ||
-        literal->as.array.count < 2)
+            literal->type != JSON_ARRAY ||
+            literal->as.array.count < 2)
         return 0.0;
 
     literal = literal->as.array.items[1];
@@ -1273,8 +1235,7 @@ static double sb3_read_turn_degrees_value(const JsonValue *block_value)
     return 0.0;
 }
 
-static double sb3_read_repeat_times(const JsonValue *block_value)
-{
+static double sb3_read_repeat_times(const JsonValue *block_value) {
     const JsonValue *inputs;
     const JsonValue *times;
     const JsonValue *value;
@@ -1283,8 +1244,8 @@ static double sb3_read_repeat_times(const JsonValue *block_value)
     times = json_object_get(inputs, "TIMES");
 
     if (times == NULL ||
-        times->type != JSON_ARRAY ||
-        times->as.array.count < 2)
+            times->type != JSON_ARRAY ||
+            times->as.array.count < 2)
         return 0.0;
 
     value = times->as.array.items[1];
@@ -1299,7 +1260,7 @@ static double sb3_read_repeat_times(const JsonValue *block_value)
         return strtod(value->as.string, NULL);
 
     if (value->type == JSON_ARRAY &&
-        value->as.array.count >= 2) {
+            value->as.array.count >= 2) {
         value = value->as.array.items[1];
 
         if (value != NULL && value->type == JSON_NUMBER)
@@ -1312,8 +1273,7 @@ static double sb3_read_repeat_times(const JsonValue *block_value)
     return 0.0;
 }
 
-static char *sb3_read_substack(const JsonValue *block_value)
-{
+static char *sb3_read_substack(const JsonValue *block_value) {
     const JsonValue *inputs;
     const JsonValue *substack;
     const JsonValue *value;
@@ -1322,8 +1282,8 @@ static char *sb3_read_substack(const JsonValue *block_value)
     substack = json_object_get(inputs, "SUBSTACK");
 
     if (substack == NULL ||
-        substack->type != JSON_ARRAY ||
-        substack->as.array.count < 2)
+            substack->type != JSON_ARRAY ||
+            substack->as.array.count < 2)
         return NULL;
 
     value = substack->as.array.items[1];
@@ -1335,7 +1295,7 @@ static char *sb3_read_substack(const JsonValue *block_value)
         return sb3_strdup_local(value->as.string);
 
     if (value->type == JSON_ARRAY &&
-        value->as.array.count >= 2) {
+            value->as.array.count >= 2) {
         value = value->as.array.items[1];
 
         if (value != NULL && value->type == JSON_STRING)
@@ -1345,8 +1305,7 @@ static char *sb3_read_substack(const JsonValue *block_value)
     return NULL;
 }
 
-static char *sb3_read_message(const JsonValue *block_value)
-{
+static char *sb3_read_message(const JsonValue *block_value) {
     const JsonValue *inputs;
     const JsonValue *message;
     const JsonValue *tag;
@@ -1386,15 +1345,14 @@ static char *sb3_read_message(const JsonValue *block_value)
     return NULL;
 }
 
-static char *sb3_read_substack2(const JsonValue *block_value)
-{
+static char *sb3_read_substack2(const JsonValue *block_value) {
     const JsonValue *inputs = json_object_get(block_value, "inputs");
     const JsonValue *sub = json_object_get(inputs, "SUBSTACK2");
     const JsonValue *value;
 
     if (sub == NULL ||
-        sub->type != JSON_ARRAY ||
-        sub->as.array.count < 2)
+            sub->type != JSON_ARRAY ||
+            sub->as.array.count < 2)
         return NULL;
 
     value = sub->as.array.items[1];
@@ -1405,7 +1363,7 @@ static char *sb3_read_substack2(const JsonValue *block_value)
         return sb3_strdup_local(value->as.string);
 
     if (value->type == JSON_ARRAY &&
-        value->as.array.count >= 2) {
+            value->as.array.count >= 2) {
         value = value->as.array.items[1];
         if (value != NULL && value->type == JSON_STRING)
             return sb3_strdup_local(value->as.string);
@@ -1414,8 +1372,7 @@ static char *sb3_read_substack2(const JsonValue *block_value)
     return NULL;
 }
 
-static void sb3_parse_variable_field(const JsonValue *block_value, SB3Block *block)
-{
+static void sb3_parse_variable_field(const JsonValue *block_value, SB3Block *block) {
     const JsonValue *fields = json_object_get(block_value, "fields");
     const JsonValue *var    = fields ? json_object_get(fields, "VARIABLE") : NULL;
 
@@ -1433,8 +1390,7 @@ static void sb3_parse_variable_field(const JsonValue *block_value, SB3Block *blo
     }
 }
 
-static void sb3_parse_list_field(const JsonValue *block_value, SB3Block *block)
-{
+static void sb3_parse_list_field(const JsonValue *block_value, SB3Block *block) {
     const JsonValue *fields = json_object_get(block_value, "fields");
     const JsonValue *list   = fields ? json_object_get(fields, "LIST") : NULL;
 
@@ -1452,8 +1408,7 @@ static void sb3_parse_list_field(const JsonValue *block_value, SB3Block *block)
     }
 }
 
-static int sb3_block_from_json(const char *block_id, const JsonValue *block_value, SB3Block *block)
-{
+static int sb3_block_from_json(const char *block_id, const JsonValue *block_value, SB3Block *block) {
     const char *opcode;
 
     if (block_id == NULL || block_value == NULL || block_value->type != JSON_OBJECT || block == NULL)
@@ -1476,90 +1431,90 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     block->kind = sb3_block_kind_from_opcode(opcode);
     switch (block->kind) {
     case SB3_BLOCK_KIND_MOTION_MOVE_STEPS:
-    sb3_parse_input_at(block_value, "STEPS", &block->input_steps);
-    block->motion_steps = sb3_read_steps_value(block_value);
-    block->has_motion_steps = 1;
-    break;
+        sb3_parse_input_at(block_value, "STEPS", &block->input_steps);
+        block->motion_steps = sb3_read_steps_value(block_value);
+        block->has_motion_steps = 1;
+        break;
     case SB3_BLOCK_KIND_MOTION_TURN_RIGHT:
-    sb3_parse_input_at(block_value, "DEGREES", &block->input_degrees);
-    block->motion_turn_degrees = sb3_read_turn_degrees_value(block_value);
-    block->has_motion_turn_degrees = 1;
-    break;
+        sb3_parse_input_at(block_value, "DEGREES", &block->input_degrees);
+        block->motion_turn_degrees = sb3_read_turn_degrees_value(block_value);
+        block->has_motion_turn_degrees = 1;
+        break;
     case SB3_BLOCK_KIND_MOTION_TURN_LEFT:
-    sb3_parse_input_at(block_value, "DEGREES", &block->input_degrees);
-    block->motion_turn_degrees = sb3_read_turn_degrees_value(block_value);
-    block->has_motion_turn_degrees = -1;
-    break;
+        sb3_parse_input_at(block_value, "DEGREES", &block->input_degrees);
+        block->motion_turn_degrees = sb3_read_turn_degrees_value(block_value);
+        block->has_motion_turn_degrees = -1;
+        break;
     case SB3_BLOCK_KIND_CONTROL_REPEAT:
-    sb3_parse_input_at(block_value, "TIMES", &block->input_times);
-    block->repeat_times = sb3_read_repeat_times(block_value);
-    block->has_repeat_times = 1;
-    block->substack = sb3_read_substack(block_value);
-    break;
+        sb3_parse_input_at(block_value, "TIMES", &block->input_times);
+        block->repeat_times = sb3_read_repeat_times(block_value);
+        block->has_repeat_times = 1;
+        block->substack = sb3_read_substack(block_value);
+        break;
     case SB3_BLOCK_KIND_LOOKS_SAY:
-    sb3_parse_input_at(block_value, "MESSAGE", &block->input_message);
-    block->message = sb3_read_message(block_value);  /* maintenant safe */
-    break;
+        sb3_parse_input_at(block_value, "MESSAGE", &block->input_message);
+        block->message = sb3_read_message(block_value);  /* maintenant safe */
+        break;
     case SB3_BLOCK_KIND_CONTROL_FOREVER:
-    block->substack = sb3_read_substack(block_value);
-    break;
+        block->substack = sb3_read_substack(block_value);
+        break;
     case SB3_BLOCK_KIND_MOTION_GOTOXY:
-    sb3_parse_input_at(block_value, "X", &block->input_x);
-    sb3_parse_input_at(block_value, "Y", &block->input_y);
-    block->motion_x = sb3_read_coordinate_value(block_value, "X");
-    block->motion_y = sb3_read_coordinate_value(block_value, "Y");
-    block->has_motion_gotoxy = 1;
-    break;
+        sb3_parse_input_at(block_value, "X", &block->input_x);
+        sb3_parse_input_at(block_value, "Y", &block->input_y);
+        block->motion_x = sb3_read_coordinate_value(block_value, "X");
+        block->motion_y = sb3_read_coordinate_value(block_value, "Y");
+        block->has_motion_gotoxy = 1;
+        break;
     case SB3_BLOCK_KIND_MOTION_SETX:
-    sb3_parse_input_at(block_value, "X", &block->input_x);
-    block->motion_x = sb3_read_coordinate_value(block_value, "X");
-    block->has_motion_setx = 1;
-    break;
+        sb3_parse_input_at(block_value, "X", &block->input_x);
+        block->motion_x = sb3_read_coordinate_value(block_value, "X");
+        block->has_motion_setx = 1;
+        break;
     case SB3_BLOCK_KIND_MOTION_SETY:
-    sb3_parse_input_at(block_value, "Y", &block->input_y);
-    block->motion_y = sb3_read_coordinate_value(block_value, "Y");
-    block->has_motion_sety = 1;
-    break;
+        sb3_parse_input_at(block_value, "Y", &block->input_y);
+        block->motion_y = sb3_read_coordinate_value(block_value, "Y");
+        block->has_motion_sety = 1;
+        break;
     case SB3_BLOCK_KIND_CONTROL_WAIT:
-    sb3_parse_input_at(block_value, "DURATION", &block->input_duration);
-    block->wait_seconds = sb3_read_coordinate_value(block_value, "DURATION");
-    block->has_wait_seconds = 1;
-    break;
-    case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION:  
-    sb3_parse_input_at(block_value, "DIRECTION", &block->input_direction);
-    block->motion_direction = sb3_read_coordinate_value(block_value, "DIRECTION");  
-    block->has_motion_pointindirection = 1;  
-    break;  
+        sb3_parse_input_at(block_value, "DURATION", &block->input_duration);
+        block->wait_seconds = sb3_read_coordinate_value(block_value, "DURATION");
+        block->has_wait_seconds = 1;
+        break;
+    case SB3_BLOCK_KIND_MOTION_POINTINDIRECTION:
+        sb3_parse_input_at(block_value, "DIRECTION", &block->input_direction);
+        block->motion_direction = sb3_read_coordinate_value(block_value, "DIRECTION");
+        block->has_motion_pointindirection = 1;
+        break;
     case SB3_BLOCK_KIND_MOTION_CHANGEXBY:
-    sb3_parse_input_at(block_value, "DX", &block->input_x);  
-    block->motion_x = sb3_read_coordinate_value(block_value, "DX");  
-    block->has_motion_setx = 1;  
-    break;  
+        sb3_parse_input_at(block_value, "DX", &block->input_x);
+        block->motion_x = sb3_read_coordinate_value(block_value, "DX");
+        block->has_motion_setx = 1;
+        break;
     case SB3_BLOCK_KIND_MOTION_CHANGEYBY:
-    sb3_parse_input_at(block_value, "DY", &block->input_y);
-    block->motion_y = sb3_read_coordinate_value(block_value, "DY");
-    block->has_motion_sety = 1;
-    break;  
+        sb3_parse_input_at(block_value, "DY", &block->input_y);
+        block->motion_y = sb3_read_coordinate_value(block_value, "DY");
+        block->has_motion_sety = 1;
+        break;
     case SB3_BLOCK_KIND_LOOKS_SETSIZETO:
-    sb3_parse_input_at(block_value, "SIZE", &block->input_size);
-    block->size_value = sb3_read_coordinate_value(block_value, "SIZE");
-    block->has_size_value = 1;
-    break;
+        sb3_parse_input_at(block_value, "SIZE", &block->input_size);
+        block->size_value = sb3_read_coordinate_value(block_value, "SIZE");
+        block->has_size_value = 1;
+        break;
     case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:
-    sb3_parse_input_at(block_value, "CHANGE", &block->input_change);
-    block->size_value = sb3_read_coordinate_value(block_value, "CHANGE");
-    block->has_size_value = 1;
-    break;
+        sb3_parse_input_at(block_value, "CHANGE", &block->input_change);
+        block->size_value = sb3_read_coordinate_value(block_value, "CHANGE");
+        block->has_size_value = 1;
+        break;
     case SB3_BLOCK_KIND_LOOKS_THINK:
-    sb3_parse_input_at(block_value, "MESSAGE", &block->input_message);
-    block->message = sb3_read_message(block_value);
-    break;
+        sb3_parse_input_at(block_value, "MESSAGE", &block->input_message);
+        block->message = sb3_read_message(block_value);
+        break;
     case SB3_BLOCK_KIND_LOOKS_SHOW:
-    // rien à lire
-    break;
-    case SB3_BLOCK_KIND_LOOKS_HIDE:  
-     // rien à lire
-    break; 
+        // rien à lire
+        break;
+    case SB3_BLOCK_KIND_LOOKS_HIDE:
+        // rien à lire
+        break;
 
     case SB3_BLOCK_KIND_OPERATOR_ADD:
     case SB3_BLOCK_KIND_OPERATOR_SUBTRACT:
@@ -1567,296 +1522,295 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     case SB3_BLOCK_KIND_OPERATOR_DIVIDE:
     case SB3_BLOCK_KIND_OPERATOR_MOD:
     case SB3_BLOCK_KIND_OPERATOR_RANDOM:
-    sb3_parse_input_at(block_value, "NUM1", &block->input_num1);
-    sb3_parse_input_at(block_value, "NUM2", &block->input_num2);
-    break;
+        sb3_parse_input_at(block_value, "NUM1", &block->input_num1);
+        sb3_parse_input_at(block_value, "NUM2", &block->input_num2);
+        break;
     case SB3_BLOCK_KIND_LOOKS_COSTUME:
-    block->message = sb3_read_field_array0(block_value, "COSTUME");
-    break;
+        block->message = sb3_read_field_array0(block_value, "COSTUME");
+        break;
 
     case SB3_BLOCK_KIND_OPERATOR_LT:
     case SB3_BLOCK_KIND_OPERATOR_GT:
     case SB3_BLOCK_KIND_OPERATOR_EQUALS:
     case SB3_BLOCK_KIND_OPERATOR_AND:
     case SB3_BLOCK_KIND_OPERATOR_OR:
-    sb3_parse_input_at(block_value, "OPERAND1", &block->input_num1);
-    sb3_parse_input_at(block_value, "OPERAND2", &block->input_num2);
-    break;
+        sb3_parse_input_at(block_value, "OPERAND1", &block->input_num1);
+        sb3_parse_input_at(block_value, "OPERAND2", &block->input_num2);
+        break;
 
     case SB3_BLOCK_KIND_OPERATOR_ROUND:
-    sb3_parse_input_at(block_value, "NUM", &block->input_num1);
-    break;
+        sb3_parse_input_at(block_value, "NUM", &block->input_num1);
+        break;
 
     case SB3_BLOCK_KIND_OPERATOR_NOT:
-    sb3_parse_input_at(block_value, "OPERAND", &block->input_num1);
-    break;
+        sb3_parse_input_at(block_value, "OPERAND", &block->input_num1);
+        break;
 
     case SB3_BLOCK_KIND_CONTROL_IF:
-    sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
-    block->substack = sb3_read_substack(block_value);
-    break;
+        sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
+        block->substack = sb3_read_substack(block_value);
+        break;
 
     case SB3_BLOCK_KIND_CONTROL_IF_ELSE:
-    sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
-    block->substack = sb3_read_substack(block_value);
-    block->substack_else = sb3_read_substack2(block_value);
-    break;
+        sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
+        block->substack = sb3_read_substack(block_value);
+        block->substack_else = sb3_read_substack2(block_value);
+        break;
     case SB3_BLOCK_KIND_OPERATOR_JOIN:
-    sb3_parse_input_at(block_value, "STRING1", &block->input_num1);
-    sb3_parse_input_at(block_value, "STRING2", &block->input_num2);
-    break;
+        sb3_parse_input_at(block_value, "STRING1", &block->input_num1);
+        sb3_parse_input_at(block_value, "STRING2", &block->input_num2);
+        break;
 
     case SB3_BLOCK_KIND_OPERATOR_LENGTH:
-    sb3_parse_input_at(block_value, "STRING", &block->input_num1);
-    break;
+        sb3_parse_input_at(block_value, "STRING", &block->input_num1);
+        break;
 
     case SB3_BLOCK_KIND_OPERATOR_CONTAINS:
-    sb3_parse_input_at(block_value, "STRING1", &block->input_num1);
-    sb3_parse_input_at(block_value, "STRING2", &block->input_num2);
-    break;
+        sb3_parse_input_at(block_value, "STRING1", &block->input_num1);
+        sb3_parse_input_at(block_value, "STRING2", &block->input_num2);
+        break;
     case SB3_BLOCK_KIND_OPERATOR_LETTER_OF:
-    sb3_parse_input_at(block_value, "LETTER", &block->input_num1);
-    sb3_parse_input_at(block_value, "STRING", &block->input_num2);
-    break;
-    
+        sb3_parse_input_at(block_value, "LETTER", &block->input_num1);
+        sb3_parse_input_at(block_value, "STRING", &block->input_num2);
+        break;
+
     case SB3_BLOCK_KIND_OPERATOR_MATHOP:
-    sb3_parse_input_at(block_value, "NUM", &block->input_num1);
-    block->message = sb3_read_field_string(block_value, "OPERATOR");
-    break;
+        sb3_parse_input_at(block_value, "NUM", &block->input_num1);
+        block->message = sb3_read_field_string(block_value, "OPERATOR");
+        break;
     case SB3_BLOCK_KIND_DATA_SETVARIABLETO:
-    sb3_parse_variable_field(block_value, block);
-    sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
-    break;
+        sb3_parse_variable_field(block_value, block);
+        sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
+        break;
     case SB3_BLOCK_KIND_DATA_CHANGEVARIABLEBY:
-    sb3_parse_variable_field(block_value, block);
-    sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
-    break;
+        sb3_parse_variable_field(block_value, block);
+        sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
+        break;
     case SB3_BLOCK_KIND_DATA_VARIABLE:
     case SB3_BLOCK_KIND_DATA_SHOWVARIABLE:
     case SB3_BLOCK_KIND_DATA_HIDEVARIABLE:
-    sb3_parse_variable_field(block_value, block);
-    break;
+        sb3_parse_variable_field(block_value, block);
+        break;
     case SB3_BLOCK_KIND_DATA_ADDTOLIST:
-    sb3_parse_list_field(block_value, block);
-    sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
-    break;
+        sb3_parse_list_field(block_value, block);
+        sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
+        break;
     case SB3_BLOCK_KIND_DATA_DELETEOFLIST:
-    sb3_parse_list_field(block_value, block);
-    sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
-    break;
+        sb3_parse_list_field(block_value, block);
+        sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
+        break;
     case SB3_BLOCK_KIND_DATA_DELETEALLOFLIST:
     case SB3_BLOCK_KIND_DATA_LENGTHOFLIST:
     case SB3_BLOCK_KIND_DATA_SHOWLIST:
     case SB3_BLOCK_KIND_DATA_HIDELIST:
     case SB3_BLOCK_KIND_DATA_LISTCONTENTS:
         sb3_parse_list_field(block_value, block);
-    break;
-    case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM:  
-    sb3_parse_list_field(block_value, block);
-    sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
-    break;
+        break;
+    case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM:
+        sb3_parse_list_field(block_value, block);
+        sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
+        break;
     case SB3_BLOCK_KIND_DATA_INSERTATLIST:
-    sb3_parse_list_field(block_value, block);
-    sb3_parse_input_at(block_value, "ITEM",  &block->input_num1);
-    sb3_parse_input_at(block_value, "INDEX", &block->input_num2);
-    break;
+        sb3_parse_list_field(block_value, block);
+        sb3_parse_input_at(block_value, "ITEM",  &block->input_num1);
+        sb3_parse_input_at(block_value, "INDEX", &block->input_num2);
+        break;
     case SB3_BLOCK_KIND_DATA_REPLACEITEMOFLIST:
-    sb3_parse_list_field(block_value, block);
-    sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
-    sb3_parse_input_at(block_value, "ITEM",  &block->input_num2);
-    break;
+        sb3_parse_list_field(block_value, block);
+        sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
+        sb3_parse_input_at(block_value, "ITEM",  &block->input_num2);
+        break;
     case SB3_BLOCK_KIND_DATA_ITEMOFLIST:
-    sb3_parse_list_field(block_value, block);
-    sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
-    break;
+        sb3_parse_list_field(block_value, block);
+        sb3_parse_input_at(block_value, "INDEX", &block->input_num1);
+        break;
     case SB3_BLOCK_KIND_DATA_ITEMNUMOFLIST:
-    sb3_parse_list_field(block_value, block);
-    sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
-    break;
-    
+        sb3_parse_list_field(block_value, block);
+        sb3_parse_input_at(block_value, "ITEM", &block->input_num1);
+        break;
+
     case SB3_BLOCK_KIND_LOOKS_NEXTCOSTUME:
-    break; 
+        break;
 
     case SB3_BLOCK_KIND_SENSING_KEYPRESSED: {
-    /* 1. Chercher dans les fields (comme le fait Scratch) */
-    const JsonValue *fields = json_object_get(block_value, "fields");
-    const JsonValue *key_field = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
-    
-    if (key_field && key_field->type == JSON_ARRAY && key_field->as.array.count >= 1) {
-        const JsonValue *val = key_field->as.array.items[0];
-        if (val && val->type == JSON_STRING) {
-            block->message = sb3_strdup_local(val->as.string);
-            break;
-        }
-    }
+        /* 1. Chercher dans les fields (comme le fait Scratch) */
+        const JsonValue *fields = json_object_get(block_value, "fields");
+        const JsonValue *key_field = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
 
-    /* 2. Si pas dans les fields, chercher dans les inputs (cas du shadow) */
-    const JsonValue *inputs = json_object_get(block_value, "inputs");
-    const JsonValue *key_in = inputs ? json_object_get(inputs, "KEY_OPTION") : NULL;
-    
-    if (key_in && key_in->type == JSON_ARRAY && key_in->as.array.count >= 2) {
-        const JsonValue *body = key_in->as.array.items[1];
-        
-        if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
-            const JsonValue *inner = body->as.array.items[1];
-            if (inner && inner->type == JSON_STRING)
-                block->message = sb3_strdup_local(inner->as.string);
-        } else if (body && body->type == JSON_STRING) {
-            /* C'est l'ID du bloc sensing_keyoptions */
-            block->input_num1.kind = SB3_INPUT_KIND_BLOCK;
-            block->input_num1.block_id = sb3_strdup_local(body->as.string);
+        if (key_field && key_field->type == JSON_ARRAY && key_field->as.array.count >= 1) {
+            const JsonValue *val = key_field->as.array.items[0];
+            if (val && val->type == JSON_STRING) {
+                block->message = sb3_strdup_local(val->as.string);
+                break;
+            }
         }
+
+        /* 2. Si pas dans les fields, chercher dans les inputs (cas du shadow) */
+        const JsonValue *inputs = json_object_get(block_value, "inputs");
+        const JsonValue *key_in = inputs ? json_object_get(inputs, "KEY_OPTION") : NULL;
+
+        if (key_in && key_in->type == JSON_ARRAY && key_in->as.array.count >= 2) {
+            const JsonValue *body = key_in->as.array.items[1];
+
+            if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+                const JsonValue *inner = body->as.array.items[1];
+                if (inner && inner->type == JSON_STRING)
+                    block->message = sb3_strdup_local(inner->as.string);
+            } else if (body && body->type == JSON_STRING) {
+                /* C'est l'ID du bloc sensing_keyoptions */
+                block->input_num1.kind = SB3_INPUT_KIND_BLOCK;
+                block->input_num1.block_id = sb3_strdup_local(body->as.string);
+            }
+        }
+        break;
     }
-    break;
-}
 
     case SB3_BLOCK_KIND_SENSING_KEYOPTIONS: {
-    const JsonValue *fields = json_object_get(block_value, "fields");
-    const JsonValue *key = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
-    if (key && key->type == JSON_ARRAY && key->as.array.count >= 1) {
-        const JsonValue *val = key->as.array.items[0];
-        if (val && val->type == JSON_STRING)
-            block->message = sb3_strdup_local(val->as.string);
+        const JsonValue *fields = json_object_get(block_value, "fields");
+        const JsonValue *key = fields ? json_object_get(fields, "KEY_OPTION") : NULL;
+        if (key && key->type == JSON_ARRAY && key->as.array.count >= 1) {
+            const JsonValue *val = key->as.array.items[0];
+            if (val && val->type == JSON_STRING)
+                block->message = sb3_strdup_local(val->as.string);
+        }
+        break;
     }
-    break;
-}
 
     case SB3_BLOCK_KIND_EVENT_BROADCAST:
     case SB3_BLOCK_KIND_EVENT_BROADCASTANDWAIT: {
-    /* 1. Essayer de lire dans les fields (comme pour le chapeau) */
-    block->broadcast_name = sb3_read_field_array0(block_value, "BROADCAST_OPTION");
-    
-    /* 2. Si pas dans les fields, chercher dans les inputs (cas du bloc broadcast) */
-    if (block->broadcast_name == NULL) {
-        const JsonValue *inputs = json_object_get(block_value, "inputs");
-        const JsonValue *b_in = inputs ? json_object_get(inputs, "BROADCAST_INPUT") : NULL;
-        
-        if (b_in && b_in->type == JSON_ARRAY && b_in->as.array.count >= 2) {
-            const JsonValue *body = b_in->as.array.items[1];
-            
-            /* Le body est un tableau : [11, "dfghjkl", "ID"] */
-            if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
-                const JsonValue *name_j = body->as.array.items[1];
-                if (name_j && name_j->type == JSON_STRING) {
-                    block->broadcast_name = sb3_strdup_local(name_j->as.string);
+        /* 1. Essayer de lire dans les fields (comme pour le chapeau) */
+        block->broadcast_name = sb3_read_field_array0(block_value, "BROADCAST_OPTION");
+
+        /* 2. Si pas dans les fields, chercher dans les inputs (cas du bloc broadcast) */
+        if (block->broadcast_name == NULL) {
+            const JsonValue *inputs = json_object_get(block_value, "inputs");
+            const JsonValue *b_in = inputs ? json_object_get(inputs, "BROADCAST_INPUT") : NULL;
+
+            if (b_in && b_in->type == JSON_ARRAY && b_in->as.array.count >= 2) {
+                const JsonValue *body = b_in->as.array.items[1];
+
+                /* Le body est un tableau : [11, "dfghjkl", "ID"] */
+                if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+                    const JsonValue *name_j = body->as.array.items[1];
+                    if (name_j && name_j->type == JSON_STRING) {
+                        block->broadcast_name = sb3_strdup_local(name_j->as.string);
+                    }
                 }
             }
         }
+        break;
     }
-    break;
-}
 
     case SB3_BLOCK_KIND_EVENT_WHENBROADCASTRECEIVED:
-    block->broadcast_name = sb3_read_field_array0(block_value, "BROADCAST_OPTION");
-    break;
-    
+        block->broadcast_name = sb3_read_field_array0(block_value, "BROADCAST_OPTION");
+        break;
+
     case SB3_BLOCK_KIND_EVENT_WHENKEYPRESSED:
-    block->event_option = sb3_read_field_array0(block_value, "KEY_OPTION");
-    break;
+        block->event_option = sb3_read_field_array0(block_value, "KEY_OPTION");
+        break;
     case SB3_BLOCK_KIND_EVENT_WHENGREATERTHAN:
-    block->event_option = sb3_read_field_array0(block_value, "WHENGREATERTHANMENU");
-    sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
-    break;
+        block->event_option = sb3_read_field_array0(block_value, "WHENGREATERTHANMENU");
+        sb3_parse_input_at(block_value, "VALUE", &block->input_num1);
+        break;
     case SB3_BLOCK_KIND_EVENT_WHENTHISSPRITECLICKED:
     case SB3_BLOCK_KIND_EVENT_WHENSTAGECLICKED:
-    break;
+        break;
 
     case SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT: {
-    const JsonValue *inputs = json_object_get(block_value, "inputs");
-    const JsonValue *t_in = inputs ? json_object_get(inputs, "TOUCHINGOBJECTMENU") : NULL;
-    
-    if (t_in && t_in->type == JSON_ARRAY && t_in->as.array.count >= 2) {
-        const JsonValue *body = t_in->as.array.items[1];
-        if (body && body->type == JSON_STRING) {
-            /* ID de shadow, à résoudre plus tard */
-            block->event_option = sb3_strdup_local(body->as.string);
-        } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
-            const JsonValue *inner = body->as.array.items[1];
-            if (inner && inner->type == JSON_STRING) {
-                block->message = sb3_strdup_local(inner->as.string);
+        const JsonValue *inputs = json_object_get(block_value, "inputs");
+        const JsonValue *t_in = inputs ? json_object_get(inputs, "TOUCHINGOBJECTMENU") : NULL;
+
+        if (t_in && t_in->type == JSON_ARRAY && t_in->as.array.count >= 2) {
+            const JsonValue *body = t_in->as.array.items[1];
+            if (body && body->type == JSON_STRING) {
+                /* ID de shadow, à résoudre plus tard */
+                block->event_option = sb3_strdup_local(body->as.string);
+            } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+                const JsonValue *inner = body->as.array.items[1];
+                if (inner && inner->type == JSON_STRING) {
+                    block->message = sb3_strdup_local(inner->as.string);
+                }
             }
         }
-    }
-    break;
+        break;
     }
     case SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECTMENU: {
-    const JsonValue *fields = json_object_get(block_value, "fields");
-    const JsonValue *f = fields ? json_object_get(fields, "TOUCHINGOBJECTMENU") : NULL;
-    if (f && f->type == JSON_ARRAY && f->as.array.count >= 1) {
-        const JsonValue *val = f->as.array.items[0];
-        if (val && val->type == JSON_STRING) {
-            block->message = sb3_strdup_local(val->as.string);
+        const JsonValue *fields = json_object_get(block_value, "fields");
+        const JsonValue *f = fields ? json_object_get(fields, "TOUCHINGOBJECTMENU") : NULL;
+        if (f && f->type == JSON_ARRAY && f->as.array.count >= 1) {
+            const JsonValue *val = f->as.array.items[0];
+            if (val && val->type == JSON_STRING) {
+                block->message = sb3_strdup_local(val->as.string);
+            }
         }
-    }
-    break;
+        break;
     }
 
     case SB3_BLOCK_KIND_CONTROL_CREATECLONEOF: {
-    const JsonValue *inputs = json_object_get(block_value, "inputs");
-    const JsonValue *c_in = inputs ? json_object_get(inputs, "CLONE_OPTION") : NULL;
-    if (c_in && c_in->type == JSON_ARRAY && c_in->as.array.count >= 2) {
-        const JsonValue *body = c_in->as.array.items[1];
-        if (body && body->type == JSON_STRING) {
-            block->event_option = sb3_strdup_local(body->as.string); /* Shadow ID */
-        } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
-            const JsonValue *inner = body->as.array.items[1];
-            if (inner && inner->type == JSON_STRING) {
-                block->message = sb3_strdup_local(inner->as.string);
+        const JsonValue *inputs = json_object_get(block_value, "inputs");
+        const JsonValue *c_in = inputs ? json_object_get(inputs, "CLONE_OPTION") : NULL;
+        if (c_in && c_in->type == JSON_ARRAY && c_in->as.array.count >= 2) {
+            const JsonValue *body = c_in->as.array.items[1];
+            if (body && body->type == JSON_STRING) {
+                block->event_option = sb3_strdup_local(body->as.string); /* Shadow ID */
+            } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+                const JsonValue *inner = body->as.array.items[1];
+                if (inner && inner->type == JSON_STRING) {
+                    block->message = sb3_strdup_local(inner->as.string);
+                }
             }
         }
-    }
-    break;
+        break;
     }
     case SB3_BLOCK_KIND_CONTROL_CREATECLONEOFMENU: {
-    block->message = sb3_read_field_array0(block_value, "CLONE_OPTION");
-    break;
+        block->message = sb3_read_field_array0(block_value, "CLONE_OPTION");
+        break;
     }
     case SB3_BLOCK_KIND_CONTROL_DELETETHISCLONE:
     case SB3_BLOCK_KIND_CONTROL_STARTASCLONE:
-    break;
+        break;
 
     case SB3_BLOCK_KIND_CONTROL_REPEATUNTIL:
-    sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
-    block->substack = sb3_read_substack(block_value);
-    break;
+        sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
+        block->substack = sb3_read_substack(block_value);
+        break;
 
     case SB3_BLOCK_KIND_CONTROL_STOP:
-    block->stop_option = sb3_read_field_array0(block_value, "STOP_OPTION");
-    break;
+        block->stop_option = sb3_read_field_array0(block_value, "STOP_OPTION");
+        break;
     case SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO: {
-    const JsonValue *inputs = json_object_get(block_value, "inputs");
-    const JsonValue *c_in = inputs ? json_object_get(inputs, "COSTUME") : NULL;
-    
-    if (c_in && c_in->type == JSON_ARRAY && c_in->as.array.count >= 2) {
-        const JsonValue *body = c_in->as.array.items[1];
-        
-        if (body && body->type == JSON_STRING) {
-            block->event_option = sb3_strdup_local(body->as.string);
-        } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
-            const JsonValue *inner = body->as.array.items[1];
-            if (inner && inner->type == JSON_STRING) {
-                block->message = sb3_strdup_local(inner->as.string);
+        const JsonValue *inputs = json_object_get(block_value, "inputs");
+        const JsonValue *c_in = inputs ? json_object_get(inputs, "COSTUME") : NULL;
+
+        if (c_in && c_in->type == JSON_ARRAY && c_in->as.array.count >= 2) {
+            const JsonValue *body = c_in->as.array.items[1];
+
+            if (body && body->type == JSON_STRING) {
+                block->event_option = sb3_strdup_local(body->as.string);
+            } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+                const JsonValue *inner = body->as.array.items[1];
+                if (inner && inner->type == JSON_STRING) {
+                    block->message = sb3_strdup_local(inner->as.string);
+                }
             }
         }
+        break;
     }
-    break;
-}
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:
         break;
-}
+    }
     return 1;
 }
 
-static int sb3_parse_variables(const JsonValue *target_value, SB3Target *target)
-{
+static int sb3_parse_variables(const JsonValue *target_value, SB3Target *target) {
     const JsonValue *vars = json_object_get(target_value, "variables");
     if (vars == NULL || vars->type != JSON_OBJECT || vars->as.object.count == 0)
         return 1;
 
     target->variables = sb3_calloc(vars->as.object.count,
-                                    sizeof(*target->variables));
+                                   sizeof(*target->variables));
     if (target->variables == NULL)
         return 0;
 
@@ -1890,8 +1844,7 @@ static int sb3_parse_variables(const JsonValue *target_value, SB3Target *target)
     return 1;
 }
 
-static int sb3_parse_lists(const JsonValue *target_value, SB3Target *target)
-{
+static int sb3_parse_lists(const JsonValue *target_value, SB3Target *target) {
     const JsonValue *lists = json_object_get(target_value, "lists");
     if (lists == NULL || lists->type != JSON_OBJECT || lists->as.object.count == 0)
         return 1;
@@ -1920,9 +1873,9 @@ static int sb3_parse_lists(const JsonValue *target_value, SB3Target *target)
         lst->item_count = 0;
 
         if (items_j != NULL && items_j->type == JSON_ARRAY &&
-            items_j->as.array.count > 0) {
+                items_j->as.array.count > 0) {
             lst->items = sb3_calloc(items_j->as.array.count,
-                                     sizeof(char *));
+                                    sizeof(char *));
             if (lst->items != NULL) {
                 for (size_t j = 0; j < items_j->as.array.count; ++j) {
                     const JsonValue *item = items_j->as.array.items[j];
@@ -1946,14 +1899,13 @@ static int sb3_parse_lists(const JsonValue *target_value, SB3Target *target)
     return 1;
 }
 
-static int sb3_parse_costumes(const JsonValue *target_value, SB3Target *target)
-{
+static int sb3_parse_costumes(const JsonValue *target_value, SB3Target *target) {
     const JsonValue *arr = json_object_get(target_value, "costumes");
     if (arr == NULL || arr->type != JSON_ARRAY || arr->as.array.count == 0)
         return 1;
 
     target->costumes = sb3_calloc(arr->as.array.count,
-                                   sizeof(*target->costumes));
+                                  sizeof(*target->costumes));
     if (target->costumes == NULL) return 0;
 
     for (size_t i = 0; i < arr->as.array.count; ++i) {
@@ -1968,7 +1920,9 @@ static int sb3_parse_costumes(const JsonValue *target_value, SB3Target *target)
         co->width = 0;
         co->height = 0;
         if (co->asset_id == NULL) {
-            free(co->name); free(co->md5ext); free(co->data_format);
+            free(co->name);
+            free(co->md5ext);
+            free(co->data_format);
             continue;
         }
         target->costume_count++;
@@ -1982,8 +1936,7 @@ static int sb3_parse_costumes(const JsonValue *target_value, SB3Target *target)
     return 1;
 }
 
-static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
-{
+static int sb3_parse_target(const JsonValue *target_value, SB3Target *target) {
     const JsonValue *blocks;
 
     if (target_value == NULL || target_value->type != JSON_OBJECT || target == NULL)
@@ -1998,11 +1951,11 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
     target->size = json_get_number(target_value, "size", 100.0);
     target->visible =   json_get_bool(target_value, "visible", 1);
     if (!sb3_parse_variables(target_value, target))
-    return 0;
+        return 0;
     if (!sb3_parse_lists(target_value, target))
-    return 0;
-    if (!sb3_parse_costumes(target_value, target)) 
-    return 0;
+        return 0;
+    if (!sb3_parse_costumes(target_value, target))
+        return 0;
 
     blocks = json_object_get(target_value, "blocks");
     if (blocks != NULL && blocks->type == JSON_OBJECT && blocks->as.object.count > 0) {
@@ -2030,59 +1983,58 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
         }
 
         target->blocks = items;
-        
+
 
         /* Resolution des shadows (menus deroulants) */
         for (index = 0; index < target->block_count; ++index) {
             SB3Block *b = &target->blocks[index];
-            
-            if (b->kind == SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT && 
-                b->message == NULL && b->event_option != NULL) {
-                    for (size_t k = 0; k < target->block_count; ++k) {
-                        SB3Block *opt = &target->blocks[k];
-                        if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
-                            if (opt->message) {
-                                b->message = sb3_strdup_local(opt->message);
-                            }
-                            break;
-                        }
-                    }
-                }  
 
-            if (b->kind == SB3_BLOCK_KIND_CONTROL_CREATECLONEOF && 
-                b->message == NULL && b->event_option != NULL) {
-                    for (size_t k = 0; k < target->block_count; ++k) {
-                        SB3Block *opt = &target->blocks[k];
-                        if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
-                            if (opt->message) b->message = sb3_strdup_local(opt->message);
-                            
-                        break;
+            if (b->kind == SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT &&
+                    b->message == NULL && b->event_option != NULL) {
+                for (size_t k = 0; k < target->block_count; ++k) {
+                    SB3Block *opt = &target->blocks[k];
+                    if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
+                        if (opt->message) {
+                            b->message = sb3_strdup_local(opt->message);
                         }
+                        break;
                     }
                 }
-            
-                if (b->kind == SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO && 
+            }
+
+            if (b->kind == SB3_BLOCK_KIND_CONTROL_CREATECLONEOF &&
                     b->message == NULL && b->event_option != NULL) {
-                        for (size_t k = 0; k < target->block_count; ++k) {
-                            SB3Block *opt = &target->blocks[k];
-                            if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
-                                /* Le shadow contient le nom du costume dans fields.COSTUME */
-                                if (opt->message) {
-                                    b->message = sb3_strdup_local(opt->message);
-                         }
-            break;
-        }
-    }
-}
+                for (size_t k = 0; k < target->block_count; ++k) {
+                    SB3Block *opt = &target->blocks[k];
+                    if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
+                        if (opt->message) b->message = sb3_strdup_local(opt->message);
+
+                        break;
+                    }
+                }
+            }
+
+            if (b->kind == SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO &&
+                    b->message == NULL && b->event_option != NULL) {
+                for (size_t k = 0; k < target->block_count; ++k) {
+                    SB3Block *opt = &target->blocks[k];
+                    if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
+                        /* Le shadow contient le nom du costume dans fields.COSTUME */
+                        if (opt->message) {
+                            b->message = sb3_strdup_local(opt->message);
+                        }
+                        break;
+                    }
+                }
             }
         }
+    }
 
 
     return 1;
 }
 
-static int sb3_convert_project_json(SB3Project *project, const char *json, size_t json_size)
-{
+static int sb3_convert_project_json(SB3Project *project, const char *json, size_t json_size) {
     const JsonValue *root;
     const JsonValue *targets;
     const char *cursor;
@@ -2136,8 +2088,7 @@ static int sb3_convert_project_json(SB3Project *project, const char *json, size_
     return 1;
 }
 
-SB3Project *sb3_load(const char *path)
-{
+SB3Project *sb3_load(const char *path) {
     int error = 0;
     zip_t *archive;
     SB3Project *project;
@@ -2158,8 +2109,8 @@ SB3Project *sb3_load(const char *path)
     sb3_project_init(project);
 
     if (!sb3_load_project_json(archive, project) ||
-        !sb3_load_assets(archive, project) ||
-        !sb3_convert_project_json(project, project->project_json, project->project_json_size)) {
+            !sb3_load_assets(archive, project) ||
+            !sb3_convert_project_json(project, project->project_json, project->project_json_size)) {
         sb3_project_clear(project);
         free(project);
         zip_close(archive);
@@ -2170,8 +2121,7 @@ SB3Project *sb3_load(const char *path)
     return project;
 }
 
-void sb3_project_free(SB3Project *project)
-{
+void sb3_project_free(SB3Project *project) {
     if (project == NULL)
         return;
 
@@ -2179,13 +2129,11 @@ void sb3_project_free(SB3Project *project)
     free(project);
 }
 
-void sb3_destroy(SB3Project *project)
-{
+void sb3_destroy(SB3Project *project) {
     sb3_project_free(project);
 }
 
-const SB3Block *sb3_target_find_block(const SB3Target *target, const char *block_id)
-{
+const SB3Block *sb3_target_find_block(const SB3Target *target, const char *block_id) {
     if (target == NULL || block_id == NULL) return NULL;
 
     for (size_t i = 0; i < target->block_count; ++i) {
@@ -2197,8 +2145,7 @@ const SB3Block *sb3_target_find_block(const SB3Target *target, const char *block
     return NULL;
 }
 
-const SB3Block *sb3_target_find_block_by_kind(const SB3Target *target, SB3BlockKind kind)
-{
+const SB3Block *sb3_target_find_block_by_kind(const SB3Target *target, SB3BlockKind kind) {
     size_t index;
 
     if (target == NULL)
@@ -2216,16 +2163,15 @@ const SB3Block *sb3_target_find_block_by_kind(const SB3Target *target, SB3BlockK
 
 
 SB3Variable *sb3_project_find_variable(SB3Project *project,
-                                        SB3Target *context,
-                                        const char *name)
-{
+                                       SB3Target *context,
+                                       const char *name) {
     if (project == NULL || name == NULL)
         return NULL;
 
     if (context != NULL) {
         for (size_t i = 0; i < context->variable_count; ++i) {
             if (context->variables[i].name &&
-                strcmp(context->variables[i].name, name) == 0)
+                    strcmp(context->variables[i].name, name) == 0)
                 return &context->variables[i];
         }
     }
@@ -2235,7 +2181,7 @@ SB3Variable *sb3_project_find_variable(SB3Project *project,
         if (!t->is_stage) continue;
         for (size_t j = 0; j < t->variable_count; ++j) {
             if (t->variables[j].name &&
-                strcmp(t->variables[j].name, name) == 0)
+                    strcmp(t->variables[j].name, name) == 0)
                 return &t->variables[j];
         }
     }
@@ -2244,16 +2190,15 @@ SB3Variable *sb3_project_find_variable(SB3Project *project,
 }
 
 SB3List *sb3_project_find_list(SB3Project *project,
-                                SB3Target *context,
-                                const char *name)
-{
+                               SB3Target *context,
+                               const char *name) {
     if (project == NULL || name == NULL)
         return NULL;
 
     if (context != NULL) {
         for (size_t i = 0; i < context->list_count; ++i) {
             if (context->lists[i].name &&
-                strcmp(context->lists[i].name, name) == 0)
+                    strcmp(context->lists[i].name, name) == 0)
                 return &context->lists[i];
         }
     }
@@ -2263,7 +2208,7 @@ SB3List *sb3_project_find_list(SB3Project *project,
         if (!t->is_stage) continue;
         for (size_t j = 0; j < t->list_count; ++j) {
             if (t->lists[j].name &&
-                strcmp(t->lists[j].name, name) == 0)
+                    strcmp(t->lists[j].name, name) == 0)
                 return &t->lists[j];
         }
     }

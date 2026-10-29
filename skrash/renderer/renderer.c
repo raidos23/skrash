@@ -16,19 +16,18 @@
 /* Fonction utilitaire pour convertir les pixels écran en coordonnées Scratch */
 static void update_scratch_mouse(SB3Renderer *r) {
     if (!r->runtime_ptr) return;
-    
+
     float sx = (float)r->mouse_x - (SB3_STAGE_WIDTH / 2.0f);
     float sy = (SB3_STAGE_HEIGHT / 2.0f) - (float)r->mouse_y;
-    
+
     sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, (int)sx, (int)sy, r->mouse_down);
 }
 
-// convertisseur SVG 
+// convertisseur SVG
 static SB3Texture *load_texture_from_svg(SDL_Renderer *sdl,
-                                          const unsigned char *svg_data,
-                                          size_t svg_size,
-                                          float scale)
-{
+        const unsigned char *svg_data,
+        size_t svg_size,
+        float scale) {
     /* nanosvg veut une string terminee par \0, on duplique */
     char *copy = malloc(svg_size + 1);
     if (copy == NULL) return NULL;
@@ -41,10 +40,16 @@ static SB3Texture *load_texture_from_svg(SDL_Renderer *sdl,
 
     int w = (int)(img->width * scale);
     int h = (int)(img->height * scale);
-    if (w <= 0 || h <= 0) { nsvgDelete(img); return NULL; }
+    if (w <= 0 || h <= 0) {
+        nsvgDelete(img);
+        return NULL;
+    }
 
     NSVGrasterizer *rast = nsvgCreateRasterizer();
-    if (rast == NULL) { nsvgDelete(img); return NULL; }
+    if (rast == NULL) {
+        nsvgDelete(img);
+        return NULL;
+    }
 
     unsigned char *pixels = malloc((size_t)w * h * 4);
     if (pixels == NULL) {
@@ -69,8 +74,11 @@ static SB3Texture *load_texture_from_svg(SDL_Renderer *sdl,
     }
 
     SDL_Texture *tex = SDL_CreateTexture(sdl,
-        SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, w, h);
-    if (tex == NULL) { free(pixels); return NULL; }
+                                         SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, w, h);
+    if (tex == NULL) {
+        free(pixels);
+        return NULL;
+    }
 
     SDL_UpdateTexture(tex, NULL, pixels, w * 4);
     SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
@@ -78,7 +86,10 @@ static SB3Texture *load_texture_from_svg(SDL_Renderer *sdl,
     free(pixels);
 
     SB3Texture *t = malloc(sizeof(*t));
-    if (t == NULL) { SDL_DestroyTexture(tex); return NULL; }
+    if (t == NULL) {
+        SDL_DestroyTexture(tex);
+        return NULL;
+    }
     t->tex = tex;
     t->w = w;
     t->h = h;
@@ -89,17 +100,19 @@ static SB3Texture *load_texture_from_svg(SDL_Renderer *sdl,
 /* textures                                                            */
 
 static SB3Texture *load_texture_from_memory(SDL_Renderer *sdl,
-                                            const unsigned char *data,
-                                            size_t size)
-{
+        const unsigned char *data,
+        size_t size) {
     int w, h, n;
     unsigned char *pixels = stbi_load_from_memory(data, (int)size,
-                                                   &w, &h, &n, 4);
+        &w, &h, &n, 4);
     if (pixels == NULL) return NULL;
 
     SDL_Texture *tex = SDL_CreateTexture(sdl,
-        SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, w, h);
-    if (tex == NULL) { stbi_image_free(pixels); return NULL; }
+                                         SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, w, h);
+    if (tex == NULL) {
+        stbi_image_free(pixels);
+        return NULL;
+    }
 
     SDL_UpdateTexture(tex, NULL, pixels, w * 4);
     SDL_SetTextureBlendMode(tex, SDL_BLENDMODE_BLEND);
@@ -107,7 +120,10 @@ static SB3Texture *load_texture_from_memory(SDL_Renderer *sdl,
     stbi_image_free(pixels);
 
     SB3Texture *t = malloc(sizeof(*t));
-    if (t == NULL) { SDL_DestroyTexture(tex); return NULL; }
+    if (t == NULL) {
+        SDL_DestroyTexture(tex);
+        return NULL;
+    }
     t->tex = tex;
     t->w = w;
     t->h = h;
@@ -116,8 +132,7 @@ static SB3Texture *load_texture_from_memory(SDL_Renderer *sdl,
 
 SB3Texture *sb3_renderer_get_texture(SB3Renderer *r,
                                      SB3Project *project,
-                                     const char *asset_id)
-{
+                                     const char *asset_id) {
     if (r == NULL || project == NULL || asset_id == NULL) return NULL;
 
     /* cache */
@@ -135,9 +150,9 @@ SB3Texture *sb3_renderer_get_texture(SB3Renderer *r,
     /* SVG */
     if (asset->data_format != NULL && strcmp(asset->data_format, "svg") == 0) {
         tex = load_texture_from_svg(r->sdl, (const unsigned char*)asset->data, asset->data_size, 1.0f);
-    } 
+    }
     /* BITMAP (png, jpg, jpeg, bmp) */
-    else if (asset->data_format != NULL && 
+    else if (asset->data_format != NULL &&
              (strcmp(asset->data_format, "png") == 0 ||
               strcmp(asset->data_format, "jpg") == 0 ||
               strcmp(asset->data_format, "jpeg") == 0 ||
@@ -149,13 +164,13 @@ SB3Texture *sb3_renderer_get_texture(SB3Renderer *r,
 
     /* Mise a jour des dimensions du costume dans le projet */
     for (size_t i = 0; i < project->target_count; ++i) {
-    SB3Target *t = &project->targets[i];
-    for (size_t j = 0; j < t->costume_count; ++j) {
-        if (t->costumes[j].asset_id && strcmp(t->costumes[j].asset_id, asset_id) == 0) {
-            t->costumes[j].width = tex->w;
-            t->costumes[j].height = tex->h;
+        SB3Target *t = &project->targets[i];
+        for (size_t j = 0; j < t->costume_count; ++j) {
+            if (t->costumes[j].asset_id && strcmp(t->costumes[j].asset_id, asset_id) == 0) {
+                t->costumes[j].width = tex->w;
+                t->costumes[j].height = tex->h;
+            }
         }
-    }
     }
 
     /* Mise en cache */
@@ -176,8 +191,7 @@ SB3Texture *sb3_renderer_get_texture(SB3Renderer *r,
 /* ------------------------------------------------------------------ */
 /* init / free                                                         */
 
-int sb3_renderer_init(SB3Renderer *r, int width, int height, const char *title)
-{
+int sb3_renderer_init(SB3Renderer *r, int width, int height, const char *title) {
     if (r == NULL) return 0;
     memset(r, 0, sizeof(*r));
     r->width = width;
@@ -190,8 +204,8 @@ int sb3_renderer_init(SB3Renderer *r, int width, int height, const char *title)
     }
 
     r->window = SDL_CreateWindow(title,
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        width, height, SDL_WINDOW_SHOWN);
+                                 SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+                                 width, height, SDL_WINDOW_SHOWN);
     if (r->window == NULL) {
         fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError());
         SDL_Quit();
@@ -199,7 +213,7 @@ int sb3_renderer_init(SB3Renderer *r, int width, int height, const char *title)
     }
 
     r->sdl = SDL_CreateRenderer(r->window, -1,
-        SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+                                SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
     if (r->sdl == NULL) {
         fprintf(stderr, "SDL_CreateRenderer failed: %s\n", SDL_GetError());
         SDL_DestroyWindow(r->window);
@@ -214,8 +228,7 @@ int sb3_renderer_init(SB3Renderer *r, int width, int height, const char *title)
     return 1;
 }
 
-void sb3_renderer_free(SB3Renderer *r)
-{
+void sb3_renderer_free(SB3Renderer *r) {
     if (r == NULL) return;
     for (size_t i = 0; i < r->cache_count; ++i) {
         free(r->cache[i].asset_id);
@@ -233,8 +246,7 @@ void sb3_renderer_free(SB3Renderer *r)
 /* ------------------------------------------------------------------ */
 /* events                                                              */
 
-int sb3_renderer_poll(SB3Renderer *r)
-{
+int sb3_renderer_poll(SB3Renderer *r) {
     if (r == NULL) return 0;
     SDL_Event ev;
     while (SDL_PollEvent(&ev)) {
@@ -244,87 +256,85 @@ int sb3_renderer_poll(SB3Renderer *r)
             break;
 
         case SDL_KEYDOWN:
-        if (ev.key.keysym.sym == SDLK_ESCAPE) {
-        r->running = 0;
-        } else if (r->runtime_ptr) {
-        SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
-        sb3_runtime_set_key(rt, ev.key.keysym.scancode, 1);
-        if (ev.key.repeat == 0) {
-            sb3_runtime_trigger_key_hats(rt, ev.key.keysym.scancode);
-        }
-        }
-        break;
-        case SDL_KEYUP:
-        if (r->runtime_ptr) {
-        sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 0);
-        }
-        break;
-
-        case SDL_MOUSEBUTTONDOWN: {
-    if (r->mouse_down) break; 
-    r->mouse_down = 1;
-    update_scratch_mouse(r); /* Convertit en coordonnees Scratch */
-
-    if (r->runtime_ptr) {
-        SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
-        float sx = (float)r->mouse_x - (SB3_STAGE_WIDTH / 2.0f);
-        float sy = (SB3_STAGE_HEIGHT / 2.0f) - (float)r->mouse_y;
-        int clicked = 0;
-
-        for (size_t i = 0; i < rt->project->target_count; i++) {
-            SB3Target *t = &rt->project->targets[i];
-            if (t->is_stage || !t->visible) continue;
-            
-            double w = 100.0; 
-            if (sx >= t->x - w/2 && sx <= t->x + w/2 && sy >= t->y - w/2 && sy <= t->y + w/2) {
-                sb3_runtime_trigger_clicks(rt, (int)sx, (int)sy, t);
-                clicked = 1;
-                break; 
-            }
-        }
-        
-        if (!clicked) {
-            for (size_t i = 0; i < rt->project->target_count; i++) {
-                if (rt->project->targets[i].is_stage) {
-                    sb3_runtime_trigger_clicks(rt, (int)sx, (int)sy, &rt->project->targets[i]);
-                    break;
+            if (ev.key.keysym.sym == SDLK_ESCAPE) {
+                r->running = 0;
+            } else if (r->runtime_ptr) {
+                SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
+                sb3_runtime_set_key(rt, ev.key.keysym.scancode, 1);
+                if (ev.key.repeat == 0) {
+                    sb3_runtime_trigger_key_hats(rt, ev.key.keysym.scancode);
                 }
             }
+            break;
+        case SDL_KEYUP:
+            if (r->runtime_ptr) {
+                sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 0);
+            }
+            break;
+
+        case SDL_MOUSEBUTTONDOWN: {
+            if (r->mouse_down) break;
+            r->mouse_down = 1;
+            update_scratch_mouse(r); /* Convertit en coordonnees Scratch */
+
+            if (r->runtime_ptr) {
+                SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
+                float sx = (float)r->mouse_x - (SB3_STAGE_WIDTH / 2.0f);
+                float sy = (SB3_STAGE_HEIGHT / 2.0f) - (float)r->mouse_y;
+                int clicked = 0;
+
+                for (size_t i = 0; i < rt->project->target_count; i++) {
+                    SB3Target *t = &rt->project->targets[i];
+                    if (t->is_stage || !t->visible) continue;
+
+                    double w = 100.0;
+                    if (sx >= t->x - w/2 && sx <= t->x + w/2 && sy >= t->y - w/2 && sy <= t->y + w/2) {
+                        sb3_runtime_trigger_clicks(rt, (int)sx, (int)sy, t);
+                        clicked = 1;
+                        break;
+                    }
+                }
+
+                if (!clicked) {
+                    for (size_t i = 0; i < rt->project->target_count; i++) {
+                        if (rt->project->targets[i].is_stage) {
+                            sb3_runtime_trigger_clicks(rt, (int)sx, (int)sy, &rt->project->targets[i]);
+                            break;
+                        }
+                    }
+                }
+            }
+            break;
+        }
+
+        case SDL_MOUSEBUTTONUP:
+            r->mouse_down = 0;
+            update_scratch_mouse(r);
+            break;
+        case SDL_MOUSEMOTION:
+            r->mouse_x = ev.motion.x;
+            r->mouse_y = ev.motion.y;
+            update_scratch_mouse(r);
+            break;
+
+
+
+
         }
     }
-    break;
-}
-
-    case SDL_MOUSEBUTTONUP:
-    r->mouse_down = 0;
-    update_scratch_mouse(r);
-    break;
-case SDL_MOUSEMOTION:
-    r->mouse_x = ev.motion.x;
-    r->mouse_y = ev.motion.y;
-    update_scratch_mouse(r);
-    break;
- 
-        
-       
-       
-    } 
-}
     return r->running;
 }
 
 /* ------------------------------------------------------------------ */
 /* dessin                                                              */
 
-void sb3_renderer_clear(SB3Renderer *r, Uint8 rr, Uint8 gg, Uint8 bb)
-{
+void sb3_renderer_clear(SB3Renderer *r, Uint8 rr, Uint8 gg, Uint8 bb) {
     if (r == NULL || r->sdl == NULL) return;
     SDL_SetRenderDrawColor(r->sdl, rr, gg, bb, 255);
     SDL_RenderClear(r->sdl);
 }
 
-void sb3_renderer_draw_stage(SB3Renderer *r, SB3Project *project)
-{
+void sb3_renderer_draw_stage(SB3Renderer *r, SB3Project *project) {
     if (r == NULL || r->sdl == NULL || project == NULL) return;
 
     /* 1. Trouver le Stage */
@@ -357,8 +367,7 @@ void sb3_renderer_draw_stage(SB3Renderer *r, SB3Project *project)
 }
 
 /* Couleur deterministe par nom de sprite. */
-static void sprite_color(const char *name, Uint8 *r, Uint8 *g, Uint8 *b)
-{
+static void sprite_color(const char *name, Uint8 *r, Uint8 *g, Uint8 *b) {
     unsigned h = 5381;
     if (name)
         for (const char *p = name; *p; ++p)
@@ -371,11 +380,10 @@ static void sprite_color(const char *name, Uint8 *r, Uint8 *g, Uint8 *b)
 /* Dessine un rectangle colore, centre sur (cx, cy), tourne de angle_deg.
  * angle Scratch : 0 = haut, 90 = droite. */
 static void draw_rotated_rect(SB3Renderer *r,
-                               float cx, float cy,
-                               float w, float h,
-                               float angle_deg,
-                               Uint8 rr, Uint8 gg, Uint8 bb)
-{
+                              float cx, float cy,
+                              float w, float h,
+                              float angle_deg,
+                              Uint8 rr, Uint8 gg, Uint8 bb) {
     SDL_Renderer *sdl = r->sdl;
     float a = (angle_deg - 90.0f) * 3.14159265f / 180.0f;
     float ca = cosf(a), sa = sinf(a);
@@ -403,14 +411,12 @@ static void draw_rotated_rect(SB3Renderer *r,
  * en coordonnee ecran (origine = coin haut-gauche, y vers le bas).
  * Suppose que la fenetre fait exactement SB3_STAGE_WIDTH x SB3_STAGE_HEIGHT. */
 static void scratch_to_screen(float sx_scratch, float sy_scratch,
-                               float *sx_screen, float *sy_screen)
-{
+                              float *sx_screen, float *sy_screen) {
     *sx_screen = (SB3_STAGE_WIDTH  / 2.0f) + sx_scratch;
     *sy_screen = (SB3_STAGE_HEIGHT / 2.0f) - sy_scratch;
 }
 
-void sb3_renderer_draw_targets(SB3Renderer *r, SB3Project *project)
-{
+void sb3_renderer_draw_targets(SB3Renderer *r, SB3Project *project) {
     if (r == NULL || r->sdl == NULL || project == NULL) return;
 
     for (size_t i = 0; i < project->target_count; ++i) {
@@ -457,43 +463,42 @@ void sb3_renderer_draw_targets(SB3Renderer *r, SB3Project *project)
                               (float)t->direction, rr, gg, bb);
         }
     }
-/* --- Dessiner les CLONES --- */
-if (r->runtime_ptr) {
-    SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
-    
-    for (size_t i = 0; i < rt->clone_count; ++i) {
-        SB3Target *t = &rt->clones[i];
-        if (!t->visible) continue;
+    /* --- Dessiner les CLONES --- */
+    if (r->runtime_ptr) {
+        SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
 
-        float cx, cy;
-        scratch_to_screen((float)t->x, (float)t->y, &cx, &cy);
+        for (size_t i = 0; i < rt->clone_count; ++i) {
+            SB3Target *t = &rt->clones[i];
+            if (!t->visible) continue;
 
-        SB3Texture *tex = NULL;
-        if (t->costume_count > 0 && t->current_costume < t->costume_count) {
-            SB3Costume *c = &t->costumes[t->current_costume];
-            tex = sb3_renderer_get_texture(r, project, c->asset_id);
-        }
+            float cx, cy;
+            scratch_to_screen((float)t->x, (float)t->y, &cx, &cy);
 
-        if (tex != NULL) {
-            float scale = (float)t->size / 100.0f;
-            float w = (float)tex->w * scale;
-            float h = (float)tex->h * scale;
-            SDL_Rect dst = { (int)(cx - w/2), (int)(cy - h/2), (int)w, (int)h };
-            double angle = (double)t->direction - 90.0;
-            SDL_Point center = { dst.w / 2, dst.h / 2 };
-            SDL_RenderCopyEx(r->sdl, tex->tex, NULL, &dst, angle, &center, SDL_FLIP_NONE);
-        } else {
-            Uint8 rr, gg, bb;
-            sprite_color(t->name, &rr, &gg, &bb);
-            float w = 100.0f * (float)t->size / 100.0f;
-            draw_rotated_rect(r, cx, cy, w, w, (float)t->direction, rr, gg, bb);
+            SB3Texture *tex = NULL;
+            if (t->costume_count > 0 && t->current_costume < t->costume_count) {
+                SB3Costume *c = &t->costumes[t->current_costume];
+                tex = sb3_renderer_get_texture(r, project, c->asset_id);
+            }
+
+            if (tex != NULL) {
+                float scale = (float)t->size / 100.0f;
+                float w = (float)tex->w * scale;
+                float h = (float)tex->h * scale;
+                SDL_Rect dst = { (int)(cx - w/2), (int)(cy - h/2), (int)w, (int)h };
+                double angle = (double)t->direction - 90.0;
+                SDL_Point center = { dst.w / 2, dst.h / 2 };
+                SDL_RenderCopyEx(r->sdl, tex->tex, NULL, &dst, angle, &center, SDL_FLIP_NONE);
+            } else {
+                Uint8 rr, gg, bb;
+                sprite_color(t->name, &rr, &gg, &bb);
+                float w = 100.0f * (float)t->size / 100.0f;
+                draw_rotated_rect(r, cx, cy, w, w, (float)t->direction, rr, gg, bb);
+            }
         }
     }
 }
-}
 
-void sb3_renderer_present(SB3Renderer *r)
-{
+void sb3_renderer_present(SB3Renderer *r) {
     if (r == NULL || r->sdl == NULL) return;
     SDL_RenderPresent(r->sdl);
 }

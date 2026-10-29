@@ -6,11 +6,10 @@
 #include <string.h>
 
 /* -------------------------------------
- Variables         
+ Variables
  -------------------------------------*/
 
-int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
-{
+int sb3_data_execute(SB3Thread *thread, const SB3Block *block) {
     if (thread == NULL || block == NULL || thread->runtime == NULL)
         return 0;
 
@@ -21,7 +20,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
         if (!sb3_input_evaluate(thread, &block->input_num1, &v))
             return 0;
         SB3Variable *var = sb3_project_find_variable(
-            thread->runtime->project, thread->target, block->variable_name);
+                               thread->runtime->project, thread->target, block->variable_name);
         if (var != NULL) var->value = v;
         return 1;
     }
@@ -31,7 +30,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
         if (!sb3_input_evaluate(thread, &block->input_num1, &v))
             return 0;
         SB3Variable *var = sb3_project_find_variable(
-            thread->runtime->project, thread->target, block->variable_name);
+                               thread->runtime->project, thread->target, block->variable_name);
         if (var != NULL) var->value += v;
         return 1;
     }
@@ -46,12 +45,12 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 
     case SB3_BLOCK_KIND_DATA_ADDTOLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 1;
 
         char buf[512] = {0};
         if (block->input_num1.kind == SB3_INPUT_KIND_LITERAL &&
-            block->input_num1.literal_string != NULL)
+                block->input_num1.literal_string != NULL)
             snprintf(buf, sizeof(buf), "%s", block->input_num1.literal_string);
         else {
             double v = 0.0;
@@ -60,7 +59,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
         }
 
         char **new_items = realloc(l->items,
-                                    (l->item_count + 1) * sizeof(char *));
+                                   (l->item_count + 1) * sizeof(char *));
         if (new_items == NULL) return 1;
         l->items = new_items;
         l->items[l->item_count++] = strdup(buf);
@@ -69,7 +68,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 
     case SB3_BLOCK_KIND_DATA_DELETEOFLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 1;
 
         double idx_d = 0.0;
@@ -86,7 +85,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 
     case SB3_BLOCK_KIND_DATA_DELETEALLOFLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 1;
         for (size_t i = 0; i < l->item_count; ++i)
             free(l->items[i]);
@@ -98,12 +97,12 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 
     case SB3_BLOCK_KIND_DATA_INSERTATLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 1;
 
         char buf[512] = {0};
         if (block->input_num1.kind == SB3_INPUT_KIND_LITERAL &&
-            block->input_num1.literal_string != NULL)
+                block->input_num1.literal_string != NULL)
             snprintf(buf, sizeof(buf), "%s", block->input_num1.literal_string);
         else {
             double v = 0.0;
@@ -117,7 +116,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
         if (idx < 1 || idx > (int)l->item_count + 1) return 1;
 
         char **new_items = realloc(l->items,
-                                    (l->item_count + 1) * sizeof(char *));
+                                   (l->item_count + 1) * sizeof(char *));
         if (new_items == NULL) return 1;
         l->items = new_items;
 
@@ -130,7 +129,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 
     case SB3_BLOCK_KIND_DATA_REPLACEITEMOFLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 1;
 
         double idx_d = 0.0;
@@ -140,7 +139,7 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 
         char buf[512] = {0};
         if (block->input_num2.kind == SB3_INPUT_KIND_LITERAL &&
-            block->input_num2.literal_string != NULL)
+                block->input_num2.literal_string != NULL)
             snprintf(buf, sizeof(buf), "%s", block->input_num2.literal_string);
         else {
             double v = 0.0;
@@ -165,17 +164,16 @@ int sb3_data_execute(SB3Thread *thread, const SB3Block *block)
 /* ------------------------------------------------------------------ */
 /* Reporters numeriques                                               */
 
-int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
-{
+int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out) {
     if (thread == NULL || block == NULL || out == NULL ||
-        thread->runtime == NULL)
+            thread->runtime == NULL)
         return 0;
 
     switch (block->kind) {
 
     case SB3_BLOCK_KIND_DATA_VARIABLE: {
         SB3Variable *v = sb3_project_find_variable(
-            thread->runtime->project, thread->target, block->variable_name);
+                             thread->runtime->project, thread->target, block->variable_name);
         if (v == NULL) return 0;
         *out = v->value;
         return 1;
@@ -183,7 +181,7 @@ int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
 
     case SB3_BLOCK_KIND_DATA_LENGTHOFLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 0;
         *out = (double)l->item_count;
         return 1;
@@ -191,12 +189,12 @@ int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
 
     case SB3_BLOCK_KIND_DATA_ITEMNUMOFLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 0;
 
         char needle[512] = {0};
         if (block->input_num1.kind == SB3_INPUT_KIND_LITERAL &&
-            block->input_num1.literal_string != NULL)
+                block->input_num1.literal_string != NULL)
             snprintf(needle, sizeof(needle), "%s",
                      block->input_num1.literal_string);
         else {
@@ -217,12 +215,12 @@ int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
 
     case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 0;
 
         char needle[512] = {0};
         if (block->input_num1.kind == SB3_INPUT_KIND_LITERAL &&
-            block->input_num1.literal_string != NULL)
+                block->input_num1.literal_string != NULL)
             snprintf(needle, sizeof(needle), "%s",
                      block->input_num1.literal_string);
         else {
@@ -250,11 +248,10 @@ int sb3_data_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
 /* Reporters string                                                   */
 
 int sb3_data_evaluate_string(SB3Thread *thread,
-                              const SB3Block *block,
-                              char *out, size_t out_size)
-{
+                             const SB3Block *block,
+                             char *out, size_t out_size) {
     if (thread == NULL || block == NULL || out == NULL || out_size == 0 ||
-        thread->runtime == NULL)
+            thread->runtime == NULL)
         return 0;
 
     out[0] = '\0';
@@ -263,7 +260,7 @@ int sb3_data_evaluate_string(SB3Thread *thread,
 
     case SB3_BLOCK_KIND_DATA_ITEMOFLIST: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 1;
 
         double idx_d = 0.0;
@@ -277,7 +274,7 @@ int sb3_data_evaluate_string(SB3Thread *thread,
 
     case SB3_BLOCK_KIND_DATA_LISTCONTENTS: {
         SB3List *l = sb3_project_find_list(
-            thread->runtime->project, thread->target, block->list_name);
+                         thread->runtime->project, thread->target, block->list_name);
         if (l == NULL) return 1;
 
         size_t used = 0;
@@ -291,12 +288,12 @@ int sb3_data_evaluate_string(SB3Thread *thread,
     }
 
     case SB3_BLOCK_KIND_DATA_LISTCONTAINSITEM: {
-    double v = 0.0;
-    if (!sb3_data_evaluate(thread, block, &v))
-        return 0;
-    snprintf(out, out_size, "%g", v);
-    return 1;
-}
+        double v = 0.0;
+        if (!sb3_data_evaluate(thread, block, &v))
+            return 0;
+        snprintf(out, out_size, "%g", v);
+        return 1;
+    }
 
     default:
         return 0;
