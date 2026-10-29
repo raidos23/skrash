@@ -44,9 +44,9 @@ all: $(TARGET) $(C_TESTS)
 
 # ---------------- shared library (Python) ----------------
 
-$(TARGET): $(OBJECTS) $(MODULE_OBJECT)
+$(TARGET): $(OBJECTS) $(MODULE_OBJECT) $(RENDER_OBJECTS)
 	@mkdir -p $(dir $@)
-	$(CC) $(LDFLAGS) $^ $(LIBS) -o $@
+	$(CC) $(LDFLAGS) $^ $(LIBS) -lSDL2 -o $@
 
 # ---------------- objects lib ----------------
 

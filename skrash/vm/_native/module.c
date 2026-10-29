@@ -3,6 +3,7 @@
 
 #include "project/sb3.h"
 #include "runtime/runtime.h"
+#include "../../renderer/renderer.h"
 
 typedef struct {
     PyObject_HEAD
@@ -138,16 +139,52 @@ SkrashProject_step(
         return NULL;
     }
 
-    if (!self->runtime.threads[0].running)
-        Py_RETURN_FALSE;
-
-    if (!sb3_runtime_step(&self->runtime)) {
-        Py_RETURN_FALSE;
+    if (sb3_runtime_step(&self->runtime)) {
+        Py_RETURN_TRUE;
     }
 
-    Py_RETURN_TRUE;
+    Py_RETURN_FALSE;
 }
 
+/* Run project (opens SDL window) */
+static PyObject *
+SkrashProject_run(
+    SkrashProject *self,
+    PyObject *Py_UNUSED(args)
+)
+{
+    if (self->project == NULL) {
+        PyErr_SetString(PyExc_RuntimeError, "Project is not loaded.");
+        return NULL;
+    }
+
+    SB3Renderer renderer;
+    if (!sb3_renderer_init(&renderer, SB3_STAGE_WIDTH, SB3_STAGE_HEIGHT, "skrash")) {
+        PyErr_SetString(PyExc_RuntimeError, "Failed to initialize renderer.");
+        return NULL;
+    }
+
+    /* On connecte le renderer au runtime */
+    renderer.runtime_ptr = &self->runtime;
+
+    /* On lance le runtime s'il ne l'est pas deja */
+    sb3_runtime_start(&self->runtime);
+
+    /* La boucle principale */
+    while (sb3_renderer_poll(&renderer)) {
+        sb3_runtime_step(&self->runtime);
+
+        sb3_renderer_clear(&renderer, 255, 255, 255);
+        sb3_renderer_draw_stage(&renderer, self->project);
+        sb3_renderer_draw_targets(&renderer, self->project);
+        sb3_renderer_present(&renderer);
+
+        SDL_Delay(16);
+    }
+
+    sb3_renderer_free(&renderer);
+    Py_RETURN_NONE;
+}
 
 /* Project methods */
 static PyMethodDef SkrashProject_methods[] = {
@@ -163,9 +200,14 @@ static PyMethodDef SkrashProject_methods[] = {
         METH_NOARGS,
         "Execute one runtime step."
     },
+    {
+        "run",
+        (PyCFunction)SkrashProject_run,
+        METH_NOARGS,
+        "Run the project (opens SDL window)."
+    },
     {NULL, NULL, 0, NULL}
 };
-
 
 /* Module methods */
 static PyMethodDef Skrash_methods[] = {
