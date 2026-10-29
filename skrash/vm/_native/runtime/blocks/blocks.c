@@ -178,6 +178,7 @@ int sb3_block_execute(SB3Thread *thread, const SB3Block *block)
     case SB3_BLOCK_KIND_LOOKS_CHANGESIZEBY:
     case SB3_BLOCK_KIND_LOOKS_NEXTCOSTUME:
     case SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO:
+    case SB3_BLOCK_KIND_LOOKS_COSTUME:
         return sb3_looks_execute(thread, block);
 
     case SB3_BLOCK_KIND_CONTROL_FOREVER:

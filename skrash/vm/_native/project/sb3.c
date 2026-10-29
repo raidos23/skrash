@@ -1033,6 +1033,7 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "control_repeat_until") == 0) return SB3_BLOCK_KIND_CONTROL_REPEATUNTIL;
     if (strcmp(opcode, "control_stop") == 0) return SB3_BLOCK_KIND_CONTROL_STOP;
     if (strcmp(opcode, "looks_switchcostumeto") == 0) return SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO;
+    if (strcmp(opcode, "looks_costume") == 0) return SB3_BLOCK_KIND_LOOKS_COSTUME;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1569,6 +1570,9 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     sb3_parse_input_at(block_value, "NUM1", &block->input_num1);
     sb3_parse_input_at(block_value, "NUM2", &block->input_num2);
     break;
+    case SB3_BLOCK_KIND_LOOKS_COSTUME:
+    block->message = sb3_read_field_array0(block_value, "COSTUME");
+    break;
 
     case SB3_BLOCK_KIND_OPERATOR_LT:
     case SB3_BLOCK_KIND_OPERATOR_GT:
@@ -1819,7 +1823,6 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     case SB3_BLOCK_KIND_CONTROL_STOP:
     block->stop_option = sb3_read_field_array0(block_value, "STOP_OPTION");
     break;
-
     case SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO: {
     const JsonValue *inputs = json_object_get(block_value, "inputs");
     const JsonValue *c_in = inputs ? json_object_get(inputs, "COSTUME") : NULL;
@@ -1827,12 +1830,9 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     if (c_in && c_in->type == JSON_ARRAY && c_in->as.array.count >= 2) {
         const JsonValue *body = c_in->as.array.items[1];
         
-        /* Cas classique : [1, "ID_DU_SHADOW"] */
         if (body && body->type == JSON_STRING) {
             block->event_option = sb3_strdup_local(body->as.string);
-        } 
-        /* Cas littéral direct : [1, [10, "nom_du_costume"]] */
-        else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+        } else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
             const JsonValue *inner = body->as.array.items[1];
             if (inner && inner->type == JSON_STRING) {
                 block->message = sb3_strdup_local(inner->as.string);
@@ -1841,8 +1841,6 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     }
     break;
 }
- 
-
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:

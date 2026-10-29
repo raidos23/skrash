@@ -59,20 +59,25 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
         target->current_costume = (target->current_costume + 1) % target->costume_count;
     }
     return 1;
-
     case SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO: {
-    /* Si le nom n'a pas ete resolu, on essaie de le trouver au runtime */
     const char *costume_name = block->message;
     
+    /* Si le nom est NULL, on va le chercher dans le shadow */
     if (costume_name == NULL && block->event_option != NULL) {
         const SB3Block *inner = sb3_target_find_block(thread->target, block->event_option);
-        if (inner) costume_name = inner->message;
+        if (inner && inner->message) {
+            costume_name = inner->message;
+        }
     }
     
-    /* SI ON NE TROUVE PAS LE NOM, ON NE PLANTE PAS LE THREAD */
     if (!costume_name) {
-        return 1; /* On dit "OK" et on passe au suivant */
+        /* On affiche un message si on ne trouve pas (pour debug) */
+        fprintf(stderr, "[COSTUME] Switch to NULL (shadow ID: %s)\n", 
+                block->event_option ? block->event_option : "(null)");
+        return 1;
     }
+    
+    fprintf(stderr, "[COSTUME] Switch to '%s'\n", costume_name);
     
     int found = 0;
     for (size_t i = 0; i < target->costume_count; ++i) {
@@ -91,7 +96,8 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
     }
     return 1;
 }
-
+   case SB3_BLOCK_KIND_LOOKS_COSTUME:
+    return 1;
     default:
         return 0;
     }
