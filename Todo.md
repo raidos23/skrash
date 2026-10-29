@@ -51,7 +51,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] go `(forward, backward)` `n` layers (`looks_goforwardbackwardlayers`)      
 
 ### Looks reporters      
-- [ ] `costume (number, name)` (`looks_costumenumbername`)      
+- [x] `costume (number, name)` (`looks_costumenumbername`)      
 - [ ] `backdrop (number, name)` (`looks_backdropnumbername`)      
 - [ ] `size` (`looks_size`)      
 

@@ -14,19 +14,21 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
     char buf[512];
     if (!sb3_input_evaluate_string(thread, &block->input_message, buf, sizeof(buf)))
         return 0;
-    printf("[%s] (say) %s\n", thread->target->name ? thread->target->name : "?", buf);
+    
     printf("[%s] (say) %s\n", 
-       thread->target->is_clone ? "CLONE" : thread->target->name, 
-       buf);
+           thread->target->is_clone ? "CLONE" : thread->target->name, 
+           buf);
     return 1;
     }
     case SB3_BLOCK_KIND_LOOKS_THINK: {
     char buf[512];
     if (!sb3_input_evaluate_string(thread, &block->input_message, buf, sizeof(buf)))
         return 0;
-    printf("[%s] (think) %s\n", thread->target->name ? thread->target->name : "?", buf);
+    printf("[%s] (think) %s\n", 
+           thread->target->is_clone ? "CLONE" : thread->target->name, 
+           buf);
     return 1;
-    }
+}
 
     case SB3_BLOCK_KIND_LOOKS_SHOW:
         target->visible = 1;
@@ -57,8 +59,53 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block)
         target->current_costume = (target->current_costume + 1) % target->costume_count;
     }
     return 1;
+
+    case SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO: {
+    /* Si le nom n'a pas ete resolu, on essaie de le trouver au runtime */
+    const char *costume_name = block->message;
     
+    if (costume_name == NULL && block->event_option != NULL) {
+        const SB3Block *inner = sb3_target_find_block(thread->target, block->event_option);
+        if (inner) costume_name = inner->message;
+    }
+    
+    /* SI ON NE TROUVE PAS LE NOM, ON NE PLANTE PAS LE THREAD */
+    if (!costume_name) {
+        return 1; /* On dit "OK" et on passe au suivant */
+    }
+    
+    int found = 0;
+    for (size_t i = 0; i < target->costume_count; ++i) {
+        if (target->costumes[i].name && strcmp(target->costumes[i].name, costume_name) == 0) {
+            target->current_costume = i;
+            found = 1;
+            break;
+        }
+    }
+    
+    if (!found) {
+        int idx = atoi(costume_name);
+        if (idx > 0 && idx <= (int)target->costume_count) {
+            target->current_costume = idx - 1;
+        }
+    }
+    return 1;
+}
+
     default:
         return 0;
+    }
+}
+
+int sb3_looks_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
+{
+    if (thread == NULL || block == NULL || out == NULL)
+        return 0;
+
+
+    switch (block->kind) {
+
+        default:
+            return 0;
     }
 }

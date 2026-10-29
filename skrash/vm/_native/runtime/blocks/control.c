@@ -56,6 +56,26 @@ int sb3_control_execute(SB3Thread *thread, const SB3Block *block)
     return 1;
     }
 
+    case SB3_BLOCK_KIND_CONTROL_STOP: {
+    if (block->stop_option) {
+        if (strcmp(block->stop_option, "all") == 0) {
+            for (size_t i = 0; i < thread->runtime->thread_count; ++i) {
+                thread->runtime->threads[i].running = 0;
+            }
+        } else if (strcmp(block->stop_option, "this script") == 0) {
+            thread->running = 0;
+        } else if (strcmp(block->stop_option, "other scripts in sprite") == 0) {
+            for (size_t i = 0; i < thread->runtime->thread_count; ++i) {
+                if (&thread->runtime->threads[i] != thread &&
+                    thread->runtime->threads[i].target == thread->target) {
+                    thread->runtime->threads[i].running = 0;
+                }
+            }
+        }
+    }
+    return 1;
+    }
+
     default:
         return 0;
     }

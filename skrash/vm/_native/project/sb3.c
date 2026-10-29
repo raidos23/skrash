@@ -124,6 +124,8 @@ static void sb3_block_init(SB3Block *block)
     block->list_id = NULL;
     block->broadcast_name = NULL;
     block->event_option = NULL;
+    block->stop_option = NULL;
+
     sb3_input_init(&block->input_steps);
     sb3_input_init(&block->input_degrees);
     sb3_input_init(&block->input_times);
@@ -654,6 +656,7 @@ static void sb3_block_free(SB3Block *block)
     free(block->opcode);
     free(block->next);
     free(block->parent);
+    free(block->stop_option);
     free(block->substack);
     free(block->message);
     free(block->substack_else);
@@ -1027,7 +1030,9 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode)
     if (strcmp(opcode, "control_create_clone_of_menu") == 0) return SB3_BLOCK_KIND_CONTROL_CREATECLONEOFMENU;
     if (strcmp(opcode, "control_delete_this_clone") == 0) return SB3_BLOCK_KIND_CONTROL_DELETETHISCLONE;
     if (strcmp(opcode, "control_start_as_clone") == 0) return SB3_BLOCK_KIND_CONTROL_STARTASCLONE;
-
+    if (strcmp(opcode, "control_repeat_until") == 0) return SB3_BLOCK_KIND_CONTROL_REPEATUNTIL;
+    if (strcmp(opcode, "control_stop") == 0) return SB3_BLOCK_KIND_CONTROL_STOP;
+    if (strcmp(opcode, "looks_switchcostumeto") == 0) return SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }
@@ -1806,6 +1811,38 @@ static int sb3_block_from_json(const char *block_id, const JsonValue *block_valu
     case SB3_BLOCK_KIND_CONTROL_STARTASCLONE:
     break;
 
+    case SB3_BLOCK_KIND_CONTROL_REPEATUNTIL:
+    sb3_parse_input_at(block_value, "CONDITION", &block->input_condition);
+    block->substack = sb3_read_substack(block_value);
+    break;
+
+    case SB3_BLOCK_KIND_CONTROL_STOP:
+    block->stop_option = sb3_read_field_array0(block_value, "STOP_OPTION");
+    break;
+
+    case SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO: {
+    const JsonValue *inputs = json_object_get(block_value, "inputs");
+    const JsonValue *c_in = inputs ? json_object_get(inputs, "COSTUME") : NULL;
+    
+    if (c_in && c_in->type == JSON_ARRAY && c_in->as.array.count >= 2) {
+        const JsonValue *body = c_in->as.array.items[1];
+        
+        /* Cas classique : [1, "ID_DU_SHADOW"] */
+        if (body && body->type == JSON_STRING) {
+            block->event_option = sb3_strdup_local(body->as.string);
+        } 
+        /* Cas littéral direct : [1, [10, "nom_du_costume"]] */
+        else if (body && body->type == JSON_ARRAY && body->as.array.count >= 2) {
+            const JsonValue *inner = body->as.array.items[1];
+            if (inner && inner->type == JSON_STRING) {
+                block->message = sb3_strdup_local(inner->as.string);
+            }
+        }
+    }
+    break;
+}
+ 
+
     case SB3_BLOCK_KIND_UNKNOWN:
     case SB3_BLOCK_KIND_EVENT_WHEN_FLAG_CLICKED:
     default:
@@ -2025,6 +2062,20 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target)
                         }
                     }
                 }
+            
+                if (b->kind == SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO && 
+                    b->message == NULL && b->event_option != NULL) {
+                        for (size_t k = 0; k < target->block_count; ++k) {
+                            SB3Block *opt = &target->blocks[k];
+                            if (opt->block_id && strcmp(opt->block_id, b->event_option) == 0) {
+                                /* Le shadow contient le nom du costume dans fields.COSTUME */
+                                if (opt->message) {
+                                    b->message = sb3_strdup_local(opt->message);
+                         }
+            break;
+        }
+    }
+}
             }
         }
 

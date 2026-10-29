@@ -18,6 +18,8 @@ typedef struct SB3Thread {
     SB3Runtime *runtime;
     SB3Target *target;
     const SB3Block *current_block;
+    int yield_next;
+
 
     SB3RepeatFrame repeat_stack[SB3_RUNTIME_MAX_REPEAT_DEPTH];
     size_t repeat_depth;

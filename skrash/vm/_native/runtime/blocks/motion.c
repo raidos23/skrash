@@ -40,8 +40,7 @@ int sb3_motion_execute(SB3Thread *thread, const SB3Block *block)
         target->x += steps * sin(radians);
         target->y += steps * cos(radians);
         keep_in_fence(target); 
-        fprintf(stderr, "[MOVE] target='%s' is_clone=%d steps=%.1f x_before=%.1f x_after=%.1f\n",
-        target->name, target->is_clone, steps, target->x, target->x + steps * sin(radians));
+       
         return 1;
     }
 

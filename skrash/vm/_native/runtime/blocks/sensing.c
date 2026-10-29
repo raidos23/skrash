@@ -52,14 +52,16 @@ int sb3_sensing_evaluate(SB3Thread *thread, const SB3Block *block, double *out)
         w1 *= (thread->target->size / 100.0);
         h1 *= (thread->target->size / 100.0);
         /* Cas 1 : souris */
+        /* Cas 1 : souris */
         if (strcmp(block->message, "_mouse_") == 0) {
-        double mx = thread->runtime->mouse_x - 240.0;
-        double my = 180.0 - thread->runtime->mouse_y;
-        double dx = mx - thread->target->x;
-        double dy = my - thread->target->y;
-        *out = (fabs(dx) <= w1/2.0 && fabs(dy) <= h1/2.0) ? 1.0 : 0.0;
+            double mx = (double)thread->runtime->mouse_x; 
+            double my = (double)thread->runtime->mouse_y; 
+            
+            double dx = mx - thread->target->x;
+            double dy = my - thread->target->y;
+            *out = (fabs(dx) <= w1/2.0 && fabs(dy) <= h1/2.0) ? 1.0 : 0.0;
         return 1;
-        }
+}
         
         /* Cas 2 : bord de l'ecran */
         if (strcmp(block->message, "_edge_") == 0) {

@@ -84,6 +84,9 @@ typedef enum SB3BlockKind {
     SB3_BLOCK_KIND_CONTROL_CREATECLONEOFMENU,
     SB3_BLOCK_KIND_CONTROL_DELETETHISCLONE,
     SB3_BLOCK_KIND_CONTROL_STARTASCLONE,
+    SB3_BLOCK_KIND_CONTROL_REPEATUNTIL,
+    SB3_BLOCK_KIND_CONTROL_STOP,
+    SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO,
 } SB3BlockKind;
 
 typedef enum SB3InputKind {
@@ -119,6 +122,7 @@ typedef struct SB3Block {
     char *substack;
     char *substack_else;
     char *message;
+    char *stop_option;
     double motion_x;
     double motion_y;
     double motion_direction;

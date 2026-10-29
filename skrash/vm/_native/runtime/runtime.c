@@ -18,8 +18,8 @@ static void sb3_runtime_reset(SB3Runtime *runtime)
     /* Initialisation du clavier et de la souris */
     memset(runtime->keys, 0, sizeof(runtime->keys));
     runtime->mouse_down = 0;
-    runtime->mouse_x = 240;  /* Centre de l'écran Scratch (480/2) */
-    runtime->mouse_y = 180;  /* Centre de l'écran Scratch (360/2) */
+    runtime->mouse_x = 0;  
+    runtime->mouse_y = 0;  
     runtime->timer_start = 0;
     runtime->clones = NULL;
     runtime->clone_count = 0;

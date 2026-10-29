@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include "../project/sb3.h"
 #include "runtime.h"
+#include <math.h>
 
 static void sb3_thread_finish_body(SB3Thread *thread, const SB3Block *next)
 {
@@ -13,12 +14,17 @@ static void sb3_thread_finish_body(SB3Thread *thread, const SB3Block *next)
         SB3RepeatFrame *frame =
             &thread->repeat_stack[thread->repeat_depth - 1];
 
-        if (frame->forever) {               
+        if (frame->forever) {
             thread->current_block = frame->body;
             return;
         }
 
-        frame->remaining--;               
+        if (frame->remaining == -1) {
+            thread->current_block = frame->repeat_block;
+            return;
+        }
+
+        frame->remaining--;
 
         if (frame->remaining > 0) {
             thread->current_block = frame->body;
@@ -47,55 +53,67 @@ static int sb3_thread_enter_repeat(SB3Thread *thread,
         return 0;
 
     int forever = (block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER);
+    int is_repeat_until = (block->kind == SB3_BLOCK_KIND_CONTROL_REPEATUNTIL);
     int iterations = 0;
 
     if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT) {
         double times = 0.0;
-
         if (!sb3_input_evaluate(thread, &block->input_times, &times))
             return 0;
-
         iterations = (int)times;
-
         if (iterations <= 0) {
             const SB3Block *next = NULL;
-
             if (block->next != NULL)
                 next = sb3_target_find_block(thread->target, block->next);
+            sb3_thread_finish_body(thread, next);
+            return 1;
+        }
+    } else if (is_repeat_until) {
+        double cond = 0.0;
+        if (!sb3_input_evaluate(thread, &block->input_condition, &cond))
+            return 0;
 
+        if (cond != 0.0) {
+            const SB3Block *next = NULL;
+            if (block->next != NULL)
+                next = sb3_target_find_block(thread->target, block->next);
             sb3_thread_finish_body(thread, next);
             return 1;
         }
     }
+    
 
     if (block->substack == NULL) {
         const SB3Block *next = NULL;
-
         if (block->next != NULL)
             next = sb3_target_find_block(thread->target, block->next);
-
         sb3_thread_finish_body(thread, next);
         return 1;
     }
 
-    const SB3Block *body =
-        sb3_target_find_block(thread->target, block->substack);
+    const SB3Block *body = sb3_target_find_block(thread->target, block->substack);
     if (body == NULL)
         return 0;
 
     SB3RepeatFrame *frame = &thread->repeat_stack[thread->repeat_depth];
     frame->repeat_block = block;
-    frame->body         = body;
-    frame->forever      = forever;
-    frame->remaining    = iterations;
+    frame->body = body;
+    frame->forever = forever;
+    frame->remaining = is_repeat_until ? -1 : iterations;
 
     thread->repeat_depth++;
     thread->current_block = body;
 
     return 1;
 }
+
 int sb3_thread_step(SB3Thread *thread)
-{
+{  
+    
+    if (thread->yield_next) {
+    thread->yield_next = 0;
+    return 1; // On rend la main, le scheduler nous rappellera
+    }
     
 
     if (thread == NULL ||
@@ -142,9 +160,10 @@ int sb3_thread_step(SB3Thread *thread)
 }
     
       const SB3Block *block = thread->current_block;
-    
+
     if (block->kind == SB3_BLOCK_KIND_CONTROL_REPEAT ||
-        block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER) {
+        block->kind == SB3_BLOCK_KIND_CONTROL_FOREVER ||
+        block->kind == SB3_BLOCK_KIND_CONTROL_REPEATUNTIL) {
         if (!sb3_thread_enter_repeat(thread, block)) {
             thread->running = 0;
             return 0;
@@ -200,7 +219,7 @@ int sb3_thread_step(SB3Thread *thread)
         thread->running = 0;
         return 0;
     }
-    
+
     if (thread->is_waiting)
         return 1;
 

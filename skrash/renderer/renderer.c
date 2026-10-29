@@ -13,6 +13,15 @@
 #include "nanosvgrast.h"
 #include "../vm/_native/runtime/runtime.h"
 
+/* Fonction utilitaire pour convertir les pixels écran en coordonnées Scratch */
+static void update_scratch_mouse(SB3Renderer *r) {
+    if (!r->runtime_ptr) return;
+    
+    float sx = (float)r->mouse_x - (SB3_STAGE_WIDTH / 2.0f);
+    float sy = (SB3_STAGE_HEIGHT / 2.0f) - (float)r->mouse_y;
+    
+    sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, (int)sx, (int)sy, r->mouse_down);
+}
 
 // convertisseur SVG 
 static SB3Texture *load_texture_from_svg(SDL_Renderer *sdl,
@@ -250,25 +259,22 @@ int sb3_renderer_poll(SB3Renderer *r)
         sb3_runtime_set_key((SB3Runtime*)r->runtime_ptr, ev.key.keysym.scancode, 0);
         }
         break;
+
         case SDL_MOUSEBUTTONDOWN: {
-            if (r->mouse_down) break; /* Si deja enfonce, on ignore (pas de spam) */
-            r->mouse_down = 1;
-    
-        if (r->runtime_ptr) {
+    if (r->mouse_down) break; 
+    r->mouse_down = 1;
+    update_scratch_mouse(r); /* Convertit en coordonnees Scratch */
+
+    if (r->runtime_ptr) {
         SB3Runtime *rt = (SB3Runtime*)r->runtime_ptr;
-        sb3_runtime_set_mouse(rt, r->mouse_x, r->mouse_y, 1);
-        
-        /* Calcul des coordonnees Scratch (0,0 au centre) */
         float sx = (float)r->mouse_x - (SB3_STAGE_WIDTH / 2.0f);
         float sy = (SB3_STAGE_HEIGHT / 2.0f) - (float)r->mouse_y;
         int clicked = 0;
 
-        /* 1. On cherche d'abord si on a clique sur un SPRITE */
         for (size_t i = 0; i < rt->project->target_count; i++) {
             SB3Target *t = &rt->project->targets[i];
             if (t->is_stage || !t->visible) continue;
             
-            /* Approximation de la taille du sprite (100px) */
             double w = 100.0; 
             if (sx >= t->x - w/2 && sx <= t->x + w/2 && sy >= t->y - w/2 && sy <= t->y + w/2) {
                 sb3_runtime_trigger_clicks(rt, (int)sx, (int)sy, t);
@@ -277,7 +283,6 @@ int sb3_renderer_poll(SB3Renderer *r)
             }
         }
         
-        /* 2. Si on n'a touche AUCUN sprite, on declenche le Stage */
         if (!clicked) {
             for (size_t i = 0; i < rt->project->target_count; i++) {
                 if (rt->project->targets[i].is_stage) {
@@ -287,21 +292,22 @@ int sb3_renderer_poll(SB3Renderer *r)
             }
         }
     }
-        break;
-    }
+    break;
+}
+
+    case SDL_MOUSEBUTTONUP:
+    r->mouse_down = 0;
+    update_scratch_mouse(r);
+    break;
+case SDL_MOUSEMOTION:
+    r->mouse_x = ev.motion.x;
+    r->mouse_y = ev.motion.y;
+    update_scratch_mouse(r);
+    break;
+ 
+        
        
-        case SDL_MOUSEBUTTONUP:
-        r->mouse_down = 0;
-        if (r->runtime_ptr) 
-        sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, 0);
-        break;
-        case SDL_MOUSEMOTION:
-        r->mouse_x = ev.motion.x;
-        r->mouse_y = ev.motion.y;
-        if (r->runtime_ptr) 
-        sb3_runtime_set_mouse((SB3Runtime*)r->runtime_ptr, r->mouse_x, r->mouse_y, r->mouse_down);
-        break;
-    
+       
     } 
 }
     return r->running;
