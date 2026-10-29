@@ -30,13 +30,19 @@ make play
       
 ## Python API (example)      
 ```python     
-import skrash      
-      
-project = skrash.load("project.sb3")      
-project.start()      
-      
-while project.step():      
-    pass   
+import skrash
+
+# Load a Scratch project
+project = skrash.load("game.sb3")
+
+# Access and modify sprites
+player = project.get_sprite("Player")
+player.x = 100
+player.y = 50
+player.say("Hello from Python!")
+
+# Run the project (opens the SDL2 window)
+project.run()
 ```   
   
       

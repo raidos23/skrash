@@ -9,18 +9,18 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] move `n` steps (`motion_movesteps`)      
 - [x] turn `n` degrees (right) (`motion_turnright`)      
 - [x] turn `n` degrees (left) (`motion_turnleft`)      
-- [ ] go to `(random position, mouse position, a sprite position)` (`motion_goto`)      
+- [x] go to `(random position, mouse position, a sprite position)` (`motion_goto`)      
 - [x] go to `(x, y)` (`motion_gotoxy`)      
 - [ ] glide `n` secs to `(random position, mouse position, a sprite position)` (`motion_glideto`)      
 - [ ] glide `n` secs to `(x, y)` (`motion_glidesecstoxy`)      
 - [x] point in direction `direction` (`motion_pointindirection`)      
-- [ ] point towards `(random position, a sprite position)` (`motion_pointtowards`)      
+- [x] point towards `(random position, a sprite position)` (`motion_pointtowards`)      
 - [x] change `x` by `n` (`motion_changexby`)      
 - [x] set `x` to `n` (`motion_setx`)      
 - [x] change `y` by `n` (`motion_changeyby`)      
 - [x] set `y` to `n` (`motion_sety`)      
-- [ ] if on edge bounce (`motion_ifonedgebounce`)      
-- [ ] set rotation style `(left-right, all around, don't rotate)` (`motion_setrotationstyle`)      
+- [x] if on edge bounce (`motion_ifonedgebounce`)      
+- [x] set rotation style `(left-right, all around, don't rotate)` (`motion_setrotationstyle`)      
 
 ### Motion reporters      
 - [x] `x position` (`motion_xposition`)      
@@ -35,7 +35,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] say `message` (`looks_say`)      
 - [ ] think `message` for `n` seconds (`looks_thinkforsecs`)      
 - [x] think `message` (`looks_think`)      
-- [ ] switch costume to `costume` (`looks_switchcostumeto`)      
+- [x] switch costume to `costume` (`looks_switchcostumeto`)      
 - [x] next costume (`looks_nextcostume`)      
 - [ ] switch backdrop to `backdrop` (`looks_switchbackdropto`)      
 - [ ] switch backdrop to `backdrop` and wait (`looks_switchbackdroptoandwait`)      
@@ -51,7 +51,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] go `(forward, backward)` `n` layers (`looks_goforwardbackwardlayers`)      
 
 ### Looks reporters      
-- [x] `costume (number, name)` (`looks_costumenumbername`)      
+- [ ] `costume (number, name)` (`looks_costumenumbername`) — partiel (number seulement)      
 - [ ] `backdrop (number, name)` (`looks_backdropnumbername`)      
 - [ ] `size` (`looks_size`)      
 
@@ -80,10 +80,11 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] when this sprite clicked (`event_whenthisspriteclicked`)      
 - [x] when stage clicked (`event_whenstageclicked`)      
 - [ ] when backdrop switches to `backdrop` (`event_whenbackdropswitchesto`)      
-- [x] when `(loudness, timer)` > `n` (`event_whengreaterthan`)      
+- [ ] when `(loudness, timer)` > `n` (`event_whengreaterthan`) — partiel (timer seulement)      
 - [x] when I receive `message` (`event_whenbroadcastreceived`)      
 - [x] broadcast `message` (`event_broadcast`)      
-- [x] broadcast `message` and wait (`event_broadcastandwait`)      
+- [ ] broadcast `message` and wait (`event_broadcastandwait`) — partiel (ne bloque pas)      
+
 ---      
 
 ## Control      
@@ -94,8 +95,8 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [x] if `condition` then (`control_if`)      
 - [x] if `condition` then ... else ... (`control_if_else`)      
 - [ ] wait until `condition` (`control_wait_until`)      
-- [ ] repeat until `condition` (`control_repeat_until`)      
-- [ ] stop `(all, this script, other scripts in sprite)` (`control_stop`)      
+- [x] repeat until `condition` (`control_repeat_until`)      
+- [ ] stop `(all, this script, other scripts in sprite)` (`control_stop`) — partiel (this script seulement)      
 - [x] when I start as a clone (`control_start_as_clone`)      
 - [x] create clone of `(myself, a sprite)` (`control_create_clone_of`)      
 - [x] delete this clone (`control_delete_this_clone`)      
@@ -109,7 +110,7 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 - [ ] reset timer (`sensing_resettimer`)      
 
 ### Sensing reporters      
-- [x] touching `(mouse-pointer, edge, a sprite)` ? (`sensing_touchingobject`)      
+- [x] touching `(mouse-pointer, edge, a sprite)` ? (`sensing_touchingobject`) — partiel (edge)      
 - [ ] touching color `color` ? (`sensing_touchingcolor`)      
 - [ ] color `color` is touching `color` ? (`sensing_coloristouchingcolor`)      
 - [ ] distance to `(mouse-pointer, a sprite)` (`sensing_distanceto`)      
@@ -188,9 +189,26 @@ Detailed progress of Scratch 3.0 block support in **skrash**.
 
 - [x] SDL2 window + basic stage rendering      
 - [x] SVG costume rendering (nanosvg)      
-- [x] Bitmap costumes      
-- [ ] Graphic effects      
+- [x] Bitmap costumes (stb_image)      
+- [ ] Graphic effects (ghost, brightness, etc.)      
 - [ ] Layer ordering      
 - [ ] Sound engine      
 - [x] Mouse / keyboard input events      
-- [ ] Clones      
+- [x] Clones rendering      
+- [ ] Say overlay in window (currently terminal only)      
+
+---      
+
+## Python API      
+
+- [x] `skrash.load(path)`      
+- [x] `Project.start()` / `Project.step()`      
+- [x] `Project.run()` (opens SDL2 window)      
+- [x] `Project.get_sprite(name)`      
+- [x] `Sprite.x` / `Sprite.y` / `Sprite.direction` (read/write)      
+- [x] `Sprite.move(steps)`      
+- [x] `Sprite.say(message)`      
+- [ ] `Project.get_variable(name)`      
+- [ ] `@when_green_flag_clicked` decorator      
+- [ ] `@when_receive("msg")` decorator      
+- [ ] `wait(seconds)` (blocking for now, greenlets later)      
