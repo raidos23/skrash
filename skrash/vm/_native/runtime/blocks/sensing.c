@@ -30,7 +30,7 @@ int sb3_sensing_evaluate(SB3Thread *thread, const SB3Block *block, double *out) 
         return 1;
 
     case SB3_BLOCK_KIND_SENSING_MOUSEY:
-        *out = (double)(180 - thread->runtime->mouse_y);
+        *out = (double)thread->runtime->mouse_y;
         return 1;
 
     case SB3_BLOCK_KIND_SENSING_TOUCHINGOBJECT: {
