@@ -32,16 +32,26 @@ make play
 ```python     
 import skrash
 
-# Load a Scratch project
 project = skrash.load("game.sb3")
 
-# Access and modify sprites
-player = project.get_sprite("Player")
-player.x = 100
-player.y = 50
-player.say("Hello from Python!")
+player = project.sprites["Player"]
+score = project.variables["Score"]
 
-# Run the project (opens the SDL2 window)
+
+@skrash.when_green_flag_clicked
+def start():
+    player.show()
+    player.x = 0
+    player.y = 0
+    player.direction = 90
+
+    score.value = 0
+    player.say("Let's play!")
+
+    player.move(50)
+    score.value += 1
+
+
 project.run()
 ```   
   
