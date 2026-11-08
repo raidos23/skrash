@@ -1969,6 +1969,11 @@ static int sb3_parse_target(const JsonValue *target_value, SB3Target *target) {
         for (index = 0; index < blocks->as.object.count; ++index) {
             const JsonPair *pair = &blocks->as.object.pairs[index];
 
+            /* Scratch tolerates non-object entries here (for example
+               [12, "var_name", "var_id"]) and ignores them. */
+            if (pair->value == NULL || pair->value->type != JSON_OBJECT)
+                continue;
+
             if (!sb3_block_from_json(pair->key, pair->value, &items[target->block_count])) {
                 size_t rollback;
 
