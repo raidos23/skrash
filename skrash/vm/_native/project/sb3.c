@@ -505,9 +505,8 @@ static JsonValue *json_parse_value(const char **cursor, const char *end) {
         char *tail = NULL;
         double number;
 
-        errno = 0;
         number = strtod(p, &tail);
-        if (tail == p || errno == ERANGE)
+        if (tail == p)
             return NULL;
 
         value = json_new(JSON_NUMBER);
