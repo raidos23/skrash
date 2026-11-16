@@ -139,6 +139,8 @@ int sb3_block_evaluate(SB3Thread *thread, const SB3Block *block, double *out) {
     case SB3_BLOCK_KIND_MOTION_YPOSITION:
     case SB3_BLOCK_KIND_MOTION_DIRECTION:
         return sb3_motion_evaluate(thread, block, out);
+    case SB3_BLOCK_KIND_LOOKS_SIZE:
+        return sb3_looks_evaluate(thread, block, out);
     case SB3_BLOCK_KIND_OPERATOR_JOIN:
     case SB3_BLOCK_KIND_OPERATOR_LENGTH:
     case SB3_BLOCK_KIND_OPERATOR_CONTAINS:

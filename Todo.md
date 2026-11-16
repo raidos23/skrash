@@ -58,7 +58,7 @@ Status legend:
 ### Looks reporters
 - [ ] `costume (number, name)` (`looks_costumenumbername`)
 - [ ] `backdrop (number, name)` (`looks_backdropnumbername`)
-- [ ] `size` (`looks_size`)
+- [x] `size` (`looks_size`)
 
 ---
 
