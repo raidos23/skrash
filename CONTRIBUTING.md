@@ -214,6 +214,16 @@ When implementing a fix or feature:
 
 For changes affecting Scratch compatibility, tests should ideally demonstrate the expected behavior using a representative Scratch project.
 
+### Scratch Project Fixtures
+
+For integration and compatibility tests, prefer genuine `.sb3` projects created and exported directly from the Scratch editor.
+
+This ensures compatibility with Scratch's actual project structure and makes it easier to inspect, modify, and reproduce test scenarios directly in Scratch.
+
+Scratch-exported projects are especially useful for features that require detailed visual verification.
+
+Reserve manually constructed fixtures for focused unit tests, edge cases, or structures that are difficult or impossible to create in Scratch.
+
 A successful compilation alone does not guarantee that a change works correctly. Run the complete test suite whenever possible.
 
 ---
