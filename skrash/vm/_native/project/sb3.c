@@ -1001,6 +1001,7 @@ SB3BlockKind sb3_block_kind_from_opcode(const char *opcode) {
     if (strcmp(opcode, "control_stop") == 0) return SB3_BLOCK_KIND_CONTROL_STOP;
     if (strcmp(opcode, "looks_switchcostumeto") == 0) return SB3_BLOCK_KIND_LOOKS_SWITCHCOSTUMETO;
     if (strcmp(opcode, "looks_costume") == 0) return SB3_BLOCK_KIND_LOOKS_COSTUME;
+    if (strcmp(opcode, "looks_size") == 0) return SB3_BLOCK_KIND_LOOKS_SIZE;
 
     return SB3_BLOCK_KIND_UNKNOWN;
 }

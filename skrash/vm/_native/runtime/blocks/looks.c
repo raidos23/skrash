@@ -103,12 +103,14 @@ int sb3_looks_execute(SB3Thread *thread, const SB3Block *block) {
 }
 
 int sb3_looks_evaluate(SB3Thread *thread, const SB3Block *block, double *out) {
-    if (thread == NULL || block == NULL || out == NULL)
+    if (thread == NULL || thread->target == NULL || block == NULL || out == NULL)
         return 0;
 
 
     switch (block->kind) {
-
+    case SB3_BLOCK_KIND_LOOKS_SIZE:
+        *out = thread->target->size;
+        return 1;
     default:
         return 0;
     }
