@@ -58,6 +58,15 @@ Run it with an SB3 project:
 ./build/skrash-play path/to/project.sb3
 ```
 
+## Runtime Design References
+
+Skrash's runtime is developed with Scratch 3.0 compatibility as its primary goal. Its behavior and implementation decisions are guided by:
+
+- [Scratch VM source code and behavioral tests](https://github.com/scratchfoundation/scratch-editor/tree/develop/packages/scratch-vm): The official Scratch VM implementation and its test suite.
+- [Scratch Specification](https://scratchspec.github.io/full/): An independent reference documenting Scratch 3.0's behavior and semantics.
+
+These references help guide implementation decisions and validate behavioral compatibility with Scratch.
+
 ## Python API
 
 The Python API can be used to load and control Scratch projects programmatically.
