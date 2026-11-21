@@ -12,20 +12,20 @@ int main(void)
 
     project = sb3_load("./tests/checks/looks.sb3");
     if (project == NULL) {
-        fprintf(stderr, "error: failed to load looks.sb3\\n");
+        fprintf(stderr, "error: failed to load looks.sb3\n");
         return 1;
     }
 
-    printf("project loaded: %zu targets\\n", project->target_count);
+    printf("project loaded: %zu targets\n", project->target_count);
 
     if (!sb3_runtime_init(&runtime, project)) {
-        fprintf(stderr, "error: failed to initialize runtime\\n");
+        fprintf(stderr, "error: failed to initialize runtime\n");
         sb3_project_free(project);
         return 1;
     }
 
     if (!sb3_runtime_start(&runtime)) {
-        fprintf(stderr, "error: no executable script found\\n");
+        fprintf(stderr, "error: no executable script found\n");
         sb3_runtime_free(&runtime);
         sb3_project_free(project);
         return 1;
@@ -62,7 +62,7 @@ int main(void)
             if (block == last_seen[i]) continue;
             last_seen[i] = block;
 
-            printf("executed: %s | x=%.2f y=%.2f direction=%.2f\\n",
+            printf("executed: %s | x=%.2f y=%.2f direction=%.2f\n",
                    block->opcode,
                    th->target->x,
                    th->target->y,
@@ -71,10 +71,10 @@ int main(void)
     }
 
     if (runtime_active) {
-        printf("runtime stopped after %zu steps (test limit reached)\\n",
+        printf("runtime stopped after %zu steps (test limit reached)\n",
                steps);
     } else {
-        printf("runtime finished after %zu steps\\n", steps);
+        printf("runtime finished after %zu steps\n", steps);
     }
 
     free(last_seen);
