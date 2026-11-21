@@ -1,6 +1,6 @@
 # Python API Ideas
 
-This document presents ideas for the Python API, inspired by the logic and architecture of Skrash. The goal is to provide a Python interface that follows the concepts already present in Skrash while making projects easier to control and inspect.
+This document presents ideas for the Python API, inspired by the way the official Scratch editor organizes and manages projects, sprites, the stage, and variable scopes. The goal is to bring these familiar Scratch concepts into a Python interface for controlling and inspecting projects.
 
 ## 1. Project API
 
@@ -148,7 +148,7 @@ Keyboard simulation remains internal to Skrash and must not generate operating-s
 
 ## 7. Design Principles
 
-1. **Skrash-inspired design:** Build on the concepts and architecture already present in Skrash.
+1. **Scratch-inspired model:** Reuse familiar concepts from the official Scratch editor, including projects, sprites, the stage, and variable scopes.
 2. **Scratch compatibility:** Preserve Scratch's project concepts and variable scopes.
 3. **Runtime isolation:** Keep simulated input events inside the Skrash runtime.
 4. **Python accessibility:** Provide a straightforward interface for controlling and inspecting Scratch projects.
