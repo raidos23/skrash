@@ -41,11 +41,11 @@ int main(void)
     run_and_capture(&runtime, output, sizeof(output));
 
     const char *expected =
-        "(say) bonjour\n"
-        "(say) 7\n"
-        "(say) 1\n"
-        "(say) 0\n"
-        "(say) Score:5\n";
+        "[Sprite1] (say) bonjour\n"
+        "[Sprite1] (say) 7\n"
+        "[Sprite1] (say) 1\n"
+        "[Sprite1] (say) 0\n"
+        "[Sprite1] (say) Score:5\n";
 
     int ok = (strcmp(output, expected) == 0);
 
