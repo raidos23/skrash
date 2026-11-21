@@ -40,4 +40,14 @@ jobs:
           SDL_AUDIODRIVER: dummy
         run: |
           make clean
-          make test
+          make all
+
+          for test in build/*.bin; do
+            [ "$test" = "build/test_coverage.bin" ] && continue
+            echo "=== $test ==="
+            "./$test"
+          done
+
+          echo ""
+          echo "=== Python tests ==="
+          python3 -m pytest -s
