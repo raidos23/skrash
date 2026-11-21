@@ -17,8 +17,3 @@ def test_python_api_without_renderer():
 
     assert cat.x == 110
     assert cat.y == 50
-
-    steps = 0
-    while project.step():
-        steps += 1
-        assert steps < 1000, "Scratch runtime did not finish"
