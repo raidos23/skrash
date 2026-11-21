@@ -145,12 +145,3 @@ project.keyboard.release("space")
 | `release(key)` | Simulates a key release. |
 
 Keyboard simulation remains internal to Skrash and must not generate operating-system-level keyboard input.
-
-## 7. Design Principles
-
-1. **Scratch-inspired model:** Reuse familiar concepts from the official Scratch editor, including projects, sprites, the stage, and variable scopes.
-2. **Scratch compatibility:** Preserve Scratch's project concepts and variable scopes.
-3. **Runtime isolation:** Keep simulated input events inside the Skrash runtime.
-4. **Python accessibility:** Provide a straightforward interface for controlling and inspecting Scratch projects.
-5. **Clear separation:** Keep virtual mouse input, targeted clicks, and virtual keyboard input distinct.
-6. **Minimalism:** Expose useful runtime capabilities without unnecessarily reproducing Scratch's internal block structure.
