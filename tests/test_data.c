@@ -40,12 +40,12 @@ int main(void)
     run_and_capture(&runtime, output, sizeof(output));
 
     const char *expected =
-        "(say) 0\n"
-        "(say) 5\n"
-        "(say) pomme\n"
-        "(say) kiwi\n"
-        "(say) 3\n"
-        "(say) 1\n";
+        "[Sprite1] (say) 0\n"
+        "[Sprite1] (say) 5\n"
+        "[Sprite1] (say) pomme\n"
+        "[Sprite1] (say) kiwi\n"
+        "[Sprite1] (say) 3\n"
+        "[Sprite1] (say) 1\n";
 
     int ok = (strcmp(output, expected) == 0);
 
