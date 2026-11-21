@@ -97,7 +97,9 @@ def start():
 project.run()
 ```
 
-See the [Python API documentation](docs/api.md) for more details.
+See the [Python API documentation](docs/api.md) for details about the currently available API.
+
+For additional ideas about how the Python API could evolve, see [Python API Ideas](docs/api_ideas.md). This file is a collection of design ideas inspired by the way the official Scratch editor organizes projects, sprites, the stage, and variables. It is not documentation of implemented features or a specification of the current API.
 
 ## Project Status
 
