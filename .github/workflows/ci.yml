@@ -12,6 +12,7 @@ jobs:
   linux-tests:
     name: Build and test (Linux)
     runs-on: ubuntu-24.04
+    timeout-minutes: 10
 
     steps:
       - name: Check out repository
@@ -45,9 +46,12 @@ jobs:
           for test in build/*.bin; do
             [ "$test" = "build/test_coverage.bin" ] && continue
             echo "=== $test ==="
-            "./$test"
+            timeout 30s "./$test" || {
+              echo "ERROR: $test failed or timed out"
+              exit 1
+            }
           done
 
           echo ""
           echo "=== Python tests ==="
-          python3 -m pytest -s
+          timeout 60s python3 -m pytest -s
