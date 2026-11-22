@@ -35,8 +35,21 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install pytest
 
-      - name: Build and run the test suite
-        run: make test
+      - name: Build and run automated tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          make all
+          for test in build/*.bin; do
+            # test_coverage is a manual diagnostic requiring an explicit .sb3 path.
+            if [[ "$(basename "$test")" == "test_coverage.bin" ]]; then
+              echo "Skipping manual coverage diagnostic (requires an .sb3 argument)"
+              continue
+            fi
+            echo "=== $test ==="
+            "$test"
+          done
+          python -m pytest -s
 
       - name: Build the standalone player
         run: make play
