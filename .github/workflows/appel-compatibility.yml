@@ -1,0 +1,78 @@
+name: APPEL Compatibility
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 5 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  appel-coverage:
+    name: Analyze APPEL block coverage
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            python3-dev \
+            libsdl2-dev \
+            libzip-dev \
+            unzip
+
+      - name: Build Skrash and test tools
+        run: make all
+
+      - name: Download APPEL from Scratch
+        id: appel
+        env:
+          SCRATCH_PROJECT_ID: "60917032"
+        run: |
+          set -euo pipefail
+
+          project_dir="$RUNNER_TEMP/skrash-appel"
+          mkdir -p "$project_dir"
+
+          project_file="$project_dir/appel.sb3"
+          curl \
+            --fail \
+            --location \
+            --silent \
+            --show-error \
+            --retry 3 \
+            --retry-all-errors \
+            --connect-timeout 20 \
+            --max-time 180 \
+            "https://projects.scratch.mit.edu/${SCRATCH_PROJECT_ID}" \
+            --output "$project_file"
+
+          test -s "$project_file"
+          unzip -tq "$project_file"
+
+          echo "project_file=$project_file" >> "$GITHUB_OUTPUT"
+
+      - name: Run APPEL block coverage analysis
+        env:
+          APPEL_PROJECT_FILE: ${{ steps.appel.outputs.project_file }}
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/appel-coverage-report.txt"
+
+          timeout 120s ./build/test_coverage.bin "$APPEL_PROJECT_FILE" | tee "$report"
+
+      - name: Upload coverage report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appel-coverage-report
+          path: ${{ runner.temp }}/appel-coverage-report.txt
+          if-no-files-found: warn
+          retention-days: 14
