@@ -1,6 +1,8 @@
 name: APPEL Compatibility
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: "0 5 * * 1"
