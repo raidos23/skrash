@@ -1,6 +1,8 @@
 name: APPEL Compatibility
 
 on:
+  pull_request:
+    branches: [main]
   workflow_dispatch:
   schedule:
     - cron: "0 5 * * 1"
@@ -31,6 +33,14 @@ jobs:
       - name: Build Skrash and test tools
         run: make all
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Scratch project downloader
+        run: npm install --global --ignore-scripts @turbowarp/sbdl@7.0.0
+
       - name: Download APPEL from Scratch
         id: appel
         env:
@@ -41,21 +51,28 @@ jobs:
           project_dir="$RUNNER_TEMP/skrash-appel"
           mkdir -p "$project_dir"
 
+          # sbdl resolves Scratch project metadata and its project token,
+          # downloads the project and assets, then rebuilds a valid .sb3.
+          (
+            cd "$project_dir"
+            sbdl "$SCRATCH_PROJECT_ID"
+          )
+
+          mapfile -t projects < <(
+            find "$project_dir" -maxdepth 1 -type f -name '*.sb3' -print
+          )
+
+          if [ "${#projects[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one downloaded SB3 project; found ${#projects[@]}."
+            exit 1
+          fi
+
           project_file="$project_dir/appel.sb3"
-          curl \
-            --fail \
-            --location \
-            --silent \
-            --show-error \
-            --retry 3 \
-            --retry-all-errors \
-            --connect-timeout 20 \
-            --max-time 180 \
-            "https://projects.scratch.mit.edu/${SCRATCH_PROJECT_ID}" \
-            --output "$project_file"
+          mv "${projects[0]}" "$project_file"
 
           test -s "$project_file"
           unzip -tq "$project_file"
+          unzip -Z1 "$project_file" | grep -qx 'project.json'
 
           echo "project_file=$project_file" >> "$GITHUB_OUTPUT"
 
