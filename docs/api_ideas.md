@@ -45,8 +45,8 @@ Project
 │   └── [name]                 # Access existing sprites
 │
 ├── stage
-│   ├── variables              # Stage-local variables only
-│   └── lists                  # Stage-local lists only
+│   ├── variables              # Variables owned by the Stage
+│   └── lists                  # Lists owned by the Stage
 │
 ├── mouse
 │   ├── move(x, y)
@@ -110,9 +110,9 @@ player.variables.create("health", 100)
 health = player.variables["health"]
 ```
 
-### Stage-local variables
+### Stage-owned variables
 
-The stage has its own local variables.
+The Stage has its own variables. In the proposed Python API, `stage.variables` is the explicit collection for variables owned by the Stage.
 
 ```python
 stage = project.stage
@@ -121,13 +121,21 @@ stage.variables.create("level", 1)
 level = stage.variables["level"]
 ```
 
+### Current runtime behavior vs. intended API semantics
+
+The current C runtime does not enforce Stage-only visibility for Stage-owned data. In `skrash/vm/_native/project/sb3.c`, the functions `sb3_project_find_variable()` and `sb3_project_find_list()` search the selected sprite's data first, then fall back to data stored on the Stage. As a result, a sprite script can currently resolve a variable or list owned by the Stage.
+
+This describes the current runtime lookup behavior; it does not define the intended contract of the proposed Python API. The API design deliberately keeps ownership explicit: `stage.variables` and `stage.lists` represent Stage-owned data, while `sprite.variables` and `sprite.lists` represent data owned by that sprite. Access through one Python collection should not silently change the ownership or scope represented by another collection.
+
+The distinction is intentional and must be preserved during implementation. If the runtime's current lookup behavior conflicts with the API contract, the runtime may need to evolve. Existing C lookup behavior should not silently dictate the final Python API semantics.
+
 ### Scope rules
 
 | Collection | Ownership and visibility |
 |---|---|
 | `project.variables` | Global variables only |
 | `sprite.variables` | Local variables of that sprite only |
-| `stage.variables` | Stage-local variables only |
+| `stage.variables` | Variables owned by the Stage |
 
 A global variable and a local variable may have the same name without being treated as the same variable. Access is always explicit through the owning object. No collection silently combines global and local variables.
 
@@ -154,7 +162,7 @@ player.lists.create("inventory")
 inventory = player.lists["inventory"]
 ```
 
-### Stage-local lists
+### Stage-owned lists
 
 ```python
 stage = project.stage
@@ -163,13 +171,15 @@ stage.lists.create("unlocked_levels")
 unlocked_levels = stage.lists["unlocked_levels"]
 ```
 
+The current runtime lookup for lists follows the same sprite-first, Stage-fallback behavior as variable lookup. See [Current runtime behavior vs. intended API semantics](#current-runtime-behavior-vs-intended-api-semantics) above. The proposed Python API still treats `stage.lists` as the explicit collection for lists owned by the Stage.
+
 ### Scope rules
 
 | Collection | Ownership and visibility |
 |---|---|
 | `project.lists` | Global lists only |
 | `sprite.lists` | Lists local to that sprite only |
-| `stage.lists` | Stage-local lists only |
+| `stage.lists` | Lists owned by the Stage |
 
 List operations (item access, insertion, deletion, clearing, and iteration) should be specified consistently in a later design pass. The ownership rules should not depend on those operations.
 
@@ -312,8 +322,8 @@ The API should be evaluated against these principles before implementation:
 
 1. **Natural Python:** prefer familiar Python constructs and avoid unnecessary ceremony.
 2. **Scratch fidelity:** preserve Scratch's concepts, ownership rules, and relevant runtime behavior.
-3. **Explicit ownership:** every variable and list has a clear owner.
-4. **No implicit scope resolution:** global and local data are accessed through distinct collections.
+3. **Explicit ownership:** every variable and list has a clear owner, independently of where the current runtime can resolve it.
+4. **Explicit API access:** global, sprite-owned, and Stage-owned data are accessed through their respective collections; current runtime fallback behavior does not redefine those API ownership boundaries.
 5. **Two-way continuity:** Python can create new Scratch entities and work with entities already present in Scratch projects.
 6. **No accidental duplication:** extending or retrieving an existing sprite must not create another one.
 7. **Consistent abstractions:** variables and lists should follow parallel ownership and access patterns.
