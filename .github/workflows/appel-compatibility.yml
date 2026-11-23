@@ -38,8 +38,8 @@ jobs:
         run: |
           set -euo pipefail
 
-          project_dir="$(mktemp -d "${RUNNER_TEMP}/appel.XXXXXX")"
-          trap 'rm -rf "$project_dir"' EXIT
+          project_dir="$RUNNER_TEMP/skrash-appel"
+          mkdir -p "$project_dir"
 
           project_file="$project_dir/appel.sb3"
           curl \
